@@ -1,0 +1,824 @@
+{
+  "backupDate": "2026-10-31T21:06:05.837Z",
+  "sourceProject": "tidal-cosmos-ww2pc",
+  "targetProject": "a-drop-of-blood-saves-a-life",
+  "googleSheetId": "169L0-gWsPmSez8rXivSX5kt5p278Ry6ZJDU66AC42SY",
+  "stats": {
+    "totalDonorsFromSheets": 45,
+    "totalSeedDonors": 8,
+    "totalUrgentRequests": 2,
+    "totalCollections": 5
+  },
+  "collections": {
+    "donors": [
+      {
+        "id": "donor_sheet_1",
+        "fullName": "عمار محمد احمد حسن العولقي",
+        "bloodType": "O+",
+        "phone": "775788096",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_2",
+        "fullName": "عماد علي عبده علي كحيل",
+        "bloodType": "O+",
+        "phone": "782644577",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_3",
+        "fullName": "عبدالله محمد احمد الفقيه",
+        "bloodType": "A+",
+        "phone": "782797148",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_4",
+        "fullName": "محمد علي محسن المريسي",
+        "bloodType": "AB+",
+        "phone": "770795394",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_5",
+        "fullName": "احمد صالح محمد ابوطالب",
+        "bloodType": "A+",
+        "phone": "771950464",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_6",
+        "fullName": "محمد محمد السريحي",
+        "bloodType": "O+",
+        "phone": "772249949",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_7",
+        "fullName": "الاستاذ نجيب عبدالله الهادي",
+        "bloodType": "O+",
+        "phone": "777492858",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_8",
+        "fullName": "مفيد عبده عبدالله المرغمي",
+        "bloodType": "A+",
+        "phone": "771708433",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_9",
+        "fullName": "عبدالرحمن محمد احمد ثابت",
+        "bloodType": "O+",
+        "phone": "777309533",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_10",
+        "fullName": "ايمن محسن الغيماني",
+        "bloodType": "A-",
+        "phone": "775014997",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_11",
+        "fullName": "الشيخ أحمد علاو دار السيد",
+        "bloodType": "O+",
+        "phone": "778937536",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_12",
+        "fullName": "سعيد محمد الغيماني",
+        "bloodType": "O+",
+        "phone": "771482280",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_13",
+        "fullName": "كمال يحيى محمد الامير",
+        "bloodType": "O+",
+        "phone": "774860529",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_14",
+        "fullName": "الدكتور نجم عبدالله قايد الاصهب",
+        "bloodType": "O+",
+        "phone": "736063050",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_15",
+        "fullName": "عبدالله عبدالخالق النجار",
+        "bloodType": "A+",
+        "phone": "733255969",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_16",
+        "fullName": "عبد المجيد خالد الهدالي",
+        "bloodType": "O+",
+        "phone": "730025452",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_17",
+        "fullName": "عصام ربيد",
+        "bloodType": "O+",
+        "phone": "778145042",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_18",
+        "fullName": "عبدالله علي محمد الجيلاني",
+        "bloodType": "A+",
+        "phone": "772818347",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_19",
+        "fullName": "احمد احمد صالح الحبيل",
+        "bloodType": "A+",
+        "phone": "774653739",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_20",
+        "fullName": "أحمد فضل يحيى السباغ",
+        "bloodType": "A+",
+        "phone": "778871016",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_21",
+        "fullName": "ابراهيم مسعد موسى المريسي",
+        "bloodType": "O+",
+        "phone": "781598929",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_22",
+        "fullName": "صادق محمد قاسم ريشان",
+        "bloodType": "O-",
+        "phone": "778539628",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_23",
+        "fullName": "حسام عبدالرب المرح",
+        "bloodType": "B+",
+        "phone": "777858331",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_24",
+        "fullName": "محمد حليف عثمان",
+        "bloodType": "A+",
+        "phone": "776415465",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_25",
+        "fullName": "عزام صلاح عبدة مساعد العولقي",
+        "bloodType": "O+",
+        "phone": "776221338",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_26",
+        "fullName": "محمد عبدالجبار ريشان",
+        "bloodType": "A+",
+        "phone": "771084559",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_27",
+        "fullName": "سلطان عبدالحميد منور باعلوي",
+        "bloodType": "A+",
+        "phone": "770455113",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_28",
+        "fullName": "خالد محمد محسن الكحلاني",
+        "bloodType": "O+",
+        "phone": "774853720",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_29",
+        "fullName": "صالح صالح محمد مساعد الرقيمي",
+        "bloodType": "O+",
+        "phone": "777827471",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_30",
+        "fullName": "يوسف عصام سعيد ربيد",
+        "bloodType": "O+",
+        "phone": "734883702",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_31",
+        "fullName": "مجاهد محمد علي الحداد",
+        "bloodType": "A+",
+        "phone": "770682196",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_32",
+        "fullName": "مجد خالد طالب",
+        "bloodType": "A-",
+        "phone": "770292874",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_33",
+        "fullName": "رضوان عبدالقادر كحيل",
+        "bloodType": "A+",
+        "phone": "777482033",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_34",
+        "fullName": "حمادة عبدالله علي",
+        "bloodType": "B+",
+        "phone": "775418439",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_35",
+        "fullName": "انس عميران",
+        "bloodType": "A+",
+        "phone": "774358118",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_36",
+        "fullName": "صلاح أحمد محمد شريبه",
+        "bloodType": "A+",
+        "phone": "770709712",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_37",
+        "fullName": "اسماعيل خالد محسن عبدالباري",
+        "bloodType": "O+",
+        "phone": "774424683",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_38",
+        "fullName": "اكرم يحيى مسعد الصيادي",
+        "bloodType": "A+",
+        "phone": "778846219",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_39",
+        "fullName": "صدام عبده عبدالله ريشان",
+        "bloodType": "O+",
+        "phone": "775462651",
+        "phoneVerified": true,
+        "residence": "قعطبة",
+        "notes": "قعطبة",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_40",
+        "fullName": "متبرع تجريبي للمزامنة",
+        "bloodType": "O+",
+        "phone": "0",
+        "phoneVerified": true,
+        "residence": "قعطبة - اختبار",
+        "notes": "قعطبة - اختبار",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_41",
+        "fullName": "متبرع تجريبي للمزامنة",
+        "bloodType": "O+",
+        "phone": "0",
+        "phoneVerified": true,
+        "residence": "قعطبة - اختبار",
+        "notes": "قعطبة - اختبار",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_42",
+        "fullName": "متبرع تجريبي للمزامنة",
+        "bloodType": "O+",
+        "phone": "0",
+        "phoneVerified": true,
+        "residence": "قعطبة - اختبار",
+        "notes": "قعطبة - اختبار",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_43",
+        "fullName": "متبرع تجريبي للمزامنة",
+        "bloodType": "O+",
+        "phone": "0",
+        "phoneVerified": true,
+        "residence": "قعطبة - اختبار",
+        "notes": "قعطبة - اختبار",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_44",
+        "fullName": "سعيد سالم",
+        "bloodType": "O+",
+        "phone": "777766698",
+        "phoneVerified": true,
+        "residence": "قعطبة - السوق العام",
+        "notes": "قعطبة - السوق العام",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      },
+      {
+        "id": "donor_sheet_45",
+        "fullName": "كوثر",
+        "bloodType": "B-",
+        "phone": "777771111",
+        "phoneVerified": true,
+        "residence": "قردح",
+        "notes": "قردح",
+        "isAvailable": true,
+        "allowContact": true,
+        "source": "google_sheets"
+      }
+    ],
+    "urgent_requests": [
+      {
+        "id": "req_seed_1",
+        "patientName": "مريض في العناية المركزة (حادث سير)",
+        "bloodType": "O-",
+        "unitsNeeded": 3,
+        "hospital": "مستشفى السلام التخصصي - قعطبة",
+        "contactName": "أخو المريض (أبو محمد)",
+        "contactPhone": "770987654",
+        "urgencyLevel": "critical",
+        "status": "open",
+        "notes": "حالة حرجة جداً بحاجة ماسة لثلاثة أكياس دم فصيلة O سالب اليوم"
+      },
+      {
+        "id": "req_seed_2",
+        "patientName": "حالة ولادة قيصرية طارئة",
+        "bloodType": "B+",
+        "unitsNeeded": 2,
+        "hospital": "مستشفى قعطبة العام",
+        "contactName": "د. خالد (المشرف المناوب)",
+        "contactPhone": "771122334",
+        "urgencyLevel": "urgent",
+        "status": "open",
+        "notes": "بحاجة لكيسين دم B موجب قبل العملية خلال الساعات القادمة"
+      }
+    ],
+    "users": [
+      {
+        "email": "ziadalsyyadi@gmail.com",
+        "displayName": "المهندس زياد الصيادي (المسؤول العام)",
+        "role": "admin",
+        "phone": "778846219"
+      }
+    ],
+    "phone_auth": [
+      {
+        "phone": "775788096",
+        "version": 1,
+        "simulatedUserEmail": "user_967775788096_v1@qataba-blood.app"
+      },
+      {
+        "phone": "782644577",
+        "version": 1,
+        "simulatedUserEmail": "user_967782644577_v1@qataba-blood.app"
+      },
+      {
+        "phone": "782797148",
+        "version": 1,
+        "simulatedUserEmail": "user_967782797148_v1@qataba-blood.app"
+      },
+      {
+        "phone": "770795394",
+        "version": 1,
+        "simulatedUserEmail": "user_967770795394_v1@qataba-blood.app"
+      },
+      {
+        "phone": "771950464",
+        "version": 1,
+        "simulatedUserEmail": "user_967771950464_v1@qataba-blood.app"
+      },
+      {
+        "phone": "772249949",
+        "version": 1,
+        "simulatedUserEmail": "user_967772249949_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777492858",
+        "version": 1,
+        "simulatedUserEmail": "user_967777492858_v1@qataba-blood.app"
+      },
+      {
+        "phone": "771708433",
+        "version": 1,
+        "simulatedUserEmail": "user_967771708433_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777309533",
+        "version": 1,
+        "simulatedUserEmail": "user_967777309533_v1@qataba-blood.app"
+      },
+      {
+        "phone": "775014997",
+        "version": 1,
+        "simulatedUserEmail": "user_967775014997_v1@qataba-blood.app"
+      },
+      {
+        "phone": "778937536",
+        "version": 1,
+        "simulatedUserEmail": "user_967778937536_v1@qataba-blood.app"
+      },
+      {
+        "phone": "771482280",
+        "version": 1,
+        "simulatedUserEmail": "user_967771482280_v1@qataba-blood.app"
+      },
+      {
+        "phone": "774860529",
+        "version": 1,
+        "simulatedUserEmail": "user_967774860529_v1@qataba-blood.app"
+      },
+      {
+        "phone": "736063050",
+        "version": 1,
+        "simulatedUserEmail": "user_967736063050_v1@qataba-blood.app"
+      },
+      {
+        "phone": "733255969",
+        "version": 1,
+        "simulatedUserEmail": "user_967733255969_v1@qataba-blood.app"
+      },
+      {
+        "phone": "730025452",
+        "version": 1,
+        "simulatedUserEmail": "user_967730025452_v1@qataba-blood.app"
+      },
+      {
+        "phone": "778145042",
+        "version": 1,
+        "simulatedUserEmail": "user_967778145042_v1@qataba-blood.app"
+      },
+      {
+        "phone": "772818347",
+        "version": 1,
+        "simulatedUserEmail": "user_967772818347_v1@qataba-blood.app"
+      },
+      {
+        "phone": "774653739",
+        "version": 1,
+        "simulatedUserEmail": "user_967774653739_v1@qataba-blood.app"
+      },
+      {
+        "phone": "778871016",
+        "version": 1,
+        "simulatedUserEmail": "user_967778871016_v1@qataba-blood.app"
+      },
+      {
+        "phone": "781598929",
+        "version": 1,
+        "simulatedUserEmail": "user_967781598929_v1@qataba-blood.app"
+      },
+      {
+        "phone": "778539628",
+        "version": 1,
+        "simulatedUserEmail": "user_967778539628_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777858331",
+        "version": 1,
+        "simulatedUserEmail": "user_967777858331_v1@qataba-blood.app"
+      },
+      {
+        "phone": "776415465",
+        "version": 1,
+        "simulatedUserEmail": "user_967776415465_v1@qataba-blood.app"
+      },
+      {
+        "phone": "776221338",
+        "version": 1,
+        "simulatedUserEmail": "user_967776221338_v1@qataba-blood.app"
+      },
+      {
+        "phone": "771084559",
+        "version": 1,
+        "simulatedUserEmail": "user_967771084559_v1@qataba-blood.app"
+      },
+      {
+        "phone": "770455113",
+        "version": 1,
+        "simulatedUserEmail": "user_967770455113_v1@qataba-blood.app"
+      },
+      {
+        "phone": "774853720",
+        "version": 1,
+        "simulatedUserEmail": "user_967774853720_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777827471",
+        "version": 1,
+        "simulatedUserEmail": "user_967777827471_v1@qataba-blood.app"
+      },
+      {
+        "phone": "734883702",
+        "version": 1,
+        "simulatedUserEmail": "user_967734883702_v1@qataba-blood.app"
+      },
+      {
+        "phone": "770682196",
+        "version": 1,
+        "simulatedUserEmail": "user_967770682196_v1@qataba-blood.app"
+      },
+      {
+        "phone": "770292874",
+        "version": 1,
+        "simulatedUserEmail": "user_967770292874_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777482033",
+        "version": 1,
+        "simulatedUserEmail": "user_967777482033_v1@qataba-blood.app"
+      },
+      {
+        "phone": "775418439",
+        "version": 1,
+        "simulatedUserEmail": "user_967775418439_v1@qataba-blood.app"
+      },
+      {
+        "phone": "774358118",
+        "version": 1,
+        "simulatedUserEmail": "user_967774358118_v1@qataba-blood.app"
+      },
+      {
+        "phone": "770709712",
+        "version": 1,
+        "simulatedUserEmail": "user_967770709712_v1@qataba-blood.app"
+      },
+      {
+        "phone": "774424683",
+        "version": 1,
+        "simulatedUserEmail": "user_967774424683_v1@qataba-blood.app"
+      },
+      {
+        "phone": "778846219",
+        "version": 1,
+        "simulatedUserEmail": "user_967778846219_v1@qataba-blood.app"
+      },
+      {
+        "phone": "775462651",
+        "version": 1,
+        "simulatedUserEmail": "user_967775462651_v1@qataba-blood.app"
+      },
+      {
+        "phone": "0",
+        "version": 1,
+        "simulatedUserEmail": "user_9670_v1@qataba-blood.app"
+      },
+      {
+        "phone": "0",
+        "version": 1,
+        "simulatedUserEmail": "user_9670_v1@qataba-blood.app"
+      },
+      {
+        "phone": "0",
+        "version": 1,
+        "simulatedUserEmail": "user_9670_v1@qataba-blood.app"
+      },
+      {
+        "phone": "0",
+        "version": 1,
+        "simulatedUserEmail": "user_9670_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777766698",
+        "version": 1,
+        "simulatedUserEmail": "user_967777766698_v1@qataba-blood.app"
+      },
+      {
+        "phone": "777771111",
+        "version": 1,
+        "simulatedUserEmail": "user_967777771111_v1@qataba-blood.app"
+      }
+    ],
+    "settings": {
+      "global": {
+        "announcement": "مرحباً بكم في منصة بنك الدم التكافلي - مديرية قعطبة",
+        "urgentThreshold": 2,
+        "updatedBy": "ziadalsyyadi@gmail.com"
+      }
+    }
+  }
+}

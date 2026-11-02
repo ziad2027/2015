@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'ziadalsyyadi@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidBloodType(bt) {
+      return bt in ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+    }
+
+    function isValidDonor(data) {
+      return data.keys().hasAll(['userId', 'fullName', 'bloodType', 'phone', 'residence', 'isAvailable', 'allowContact']) &&
+        data.keys().hasOnly(['userId', 'fullName', 'bloodType', 'phone', 'phoneVerified', 'residence', 'notes', 'lastDonationDate', 'isAvailable', 'allowContact', 'createdAt', 'updatedAt']) &&
+        data.userId is string && (data.userId == request.auth.uid || isAdmin()) &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        isValidBloodType(data.bloodType) &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 20 &&
+        (!('phoneVerified' in data) || (data.phoneVerified is bool)) &&
+        data.residence is string && data.residence.size() >= 2 && data.residence.size() <= 150 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        (!('lastDonationDate' in data) || (data.lastDonationDate is string && data.lastDonationDate.size() <= 40)) &&
+        data.isAvailable is bool &&
+        data.allowContact is bool;
+    }
+
+    function isValidUrgentRequest(data) {
+      return data.keys().hasAll(['userId', 'patientName', 'bloodType', 'unitsNeeded', 'hospital', 'contactName', 'contactPhone', 'urgencyLevel', 'status']) &&
+        data.keys().hasOnly(['userId', 'patientName', 'bloodType', 'unitsNeeded', 'hospital', 'contactName', 'contactPhone', 'urgencyLevel', 'status', 'notes', 'createdAt', 'updatedAt']) &&
+        data.userId is string && (data.userId == request.auth.uid || isAdmin()) &&
+        data.patientName is string && data.patientName.size() >= 2 && data.patientName.size() <= 100 &&
+        isValidBloodType(data.bloodType) &&
+        data.unitsNeeded is number && data.unitsNeeded >= 1 && data.unitsNeeded <= 20 &&
+        data.hospital is string && data.hospital.size() >= 2 && data.hospital.size() <= 150 &&
+        data.contactName is string && data.contactName.size() >= 2 && data.contactName.size() <= 100 &&
+        data.contactPhone is string && data.contactPhone.size() >= 7 && data.contactPhone.size() <= 20 &&
+        data.urgencyLevel in ['critical', 'urgent', 'normal'] &&
+        data.status in ['open', 'fulfilled'] &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    // Donors Collection
+    match /donors/{donorId} {
+      allow get, list: if true;
+
+      allow create: if isSignedIn() &&
+        isValidId(donorId) &&
+        isValidDonor(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(donorId) &&
+        isValidDonor(incoming()) &&
+        (existing().userId == request.auth.uid || isAdmin()) &&
+        (incoming().userId == existing().userId || isAdmin()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'userId', 'fullName', 'bloodType', 'phone', 'phoneVerified', 'residence', 'notes', 'lastDonationDate', 'isAvailable', 'allowContact', 'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() &&
+        isValidId(donorId) &&
+        (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // Urgent Requests Collection
+    match /urgent_requests/{requestId} {
+      allow get, list: if true;
+
+      allow create: if isSignedIn() &&
+        isValidId(requestId) &&
+        isValidUrgentRequest(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(requestId) &&
+        isValidUrgentRequest(incoming()) &&
+        (existing().userId == request.auth.uid || isAdmin()) &&
+        incoming().userId == existing().userId &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'patientName', 'bloodType', 'unitsNeeded', 'hospital', 'contactName', 'contactPhone', 'urgencyLevel', 'status', 'notes', 'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() &&
+        isValidId(requestId) &&
+        (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn() &&
+        request.auth.uid == userId &&
+        (incoming().role == 'user' || (request.auth.token.email == 'ziadalsyyadi@gmail.com' && incoming().role == 'admin')) &&
+        incoming().displayName is string && incoming().displayName.size() <= 100;
+
+      allow update: if isSignedIn() &&
+        request.auth.uid == userId &&
+        (incoming().role == existing().role || (request.auth.token.email == 'ziadalsyyadi@gmail.com' && incoming().role in ['user', 'admin'])) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'phone', 'phoneVerified', 'role', 'updatedAt']);
+
+      allow delete: if isAdmin();
+    }
+
+    // Phone Auth Records (direct phone login & reset tracking)
+    match /phone_auth/{phone} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update: if isValidId(phone) &&
+        incoming().keys().hasAll(['phone', 'version', 'userId']) &&
+        incoming().phone is string && incoming().phone.size() >= 7 && incoming().phone.size() <= 25 &&
+        incoming().version is number &&
+        incoming().userId is string;
+      allow delete: if isAdmin();
+    }
+
+    // App Settings
+    match /settings/{settingId} {
+      allow get: if true;
+      allow list: if true;
+      allow write: if (isAdmin() || (isSignedIn() && request.auth.token.email == 'ziadalsyyadi@gmail.com')) && isValidId(settingId);
+    }
+  }
+}

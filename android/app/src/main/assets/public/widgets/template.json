@@ -1,0 +1,17 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "قطرة دم تنقذ حياة إنسان - قعطبة",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "TextBlock",
+      "text": "ابحث عن فصائل الدم وتبرع لإنقاذ الأرواح في قعطبة",
+      "wrap": true
+    }
+  ]
+}

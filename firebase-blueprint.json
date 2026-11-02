@@ -1,0 +1,250 @@
+{
+  "entities": {
+    "Donor": {
+      "title": "Donor",
+      "description": "Registered blood donor profile",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the donor or creator"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of donor",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "bloodType": {
+          "type": "string",
+          "description": "Blood group",
+          "enum": ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]
+        },
+        "phone": {
+          "type": "string",
+          "description": "Primary phone number",
+          "minLength": 7,
+          "maxLength": 20
+        },
+        "residence": {
+          "type": "string",
+          "description": "Current city or neighborhood residence",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional health notes or availability comments",
+          "maxLength": 500
+        },
+        "lastDonationDate": {
+          "type": "string",
+          "description": "Date of donation or last donation",
+          "maxLength": 40
+        },
+        "isAvailable": {
+          "type": "boolean",
+          "description": "Whether donor is ready and eligible to donate now"
+        },
+        "allowContact": {
+          "type": "boolean",
+          "description": "Donor consent to allow searchers to contact them"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when donor was registered"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["userId", "fullName", "bloodType", "phone", "residence", "isAvailable", "allowContact", "createdAt"]
+    },
+    "UrgentRequest": {
+      "title": "UrgentRequest",
+      "description": "Emergency blood donation request",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of requester"
+        },
+        "patientName": {
+          "type": "string",
+          "description": "Patient or case identifier",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "bloodType": {
+          "type": "string",
+          "description": "Required blood group",
+          "enum": ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]
+        },
+        "unitsNeeded": {
+          "type": "number",
+          "description": "Quantity of blood bags needed"
+        },
+        "hospital": {
+          "type": "string",
+          "description": "Hospital name and location",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "contactName": {
+          "type": "string",
+          "description": "Contact person name",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "contactPhone": {
+          "type": "string",
+          "description": "Contact phone number",
+          "minLength": 7,
+          "maxLength": 20
+        },
+        "urgencyLevel": {
+          "type": "string",
+          "description": "Urgency priority",
+          "enum": ["critical", "urgent", "normal"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the blood request",
+          "enum": ["open", "fulfilled"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional emergency details",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when request was posted"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["userId", "patientName", "bloodType", "unitsNeeded", "hospital", "contactName", "contactPhone", "urgencyLevel", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered app user profile",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "User phone number",
+          "maxLength": 20
+        },
+        "role": {
+          "type": "string",
+          "description": "User role",
+          "enum": ["user", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "User creation time"
+        }
+      },
+      "required": ["displayName", "role", "createdAt"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Global application configuration and announcements",
+      "type": "object",
+      "properties": {
+        "announcement": {
+          "type": "string",
+          "description": "Public text announcement shown on home screen",
+          "maxLength": 1000
+        },
+        "urgentThreshold": {
+          "type": "number",
+          "description": "Number of units that triggers a priority highlight"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "UID of the admin who last changed settings"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["announcement", "updatedAt"]
+    },
+    "PhoneAuthRecord": {
+      "title": "PhoneAuthRecord",
+      "description": "Phone account lookup and credential version",
+      "type": "object",
+      "properties": {
+        "phone": {
+          "type": "string",
+          "description": "Normalized phone number",
+          "minLength": 7,
+          "maxLength": 20
+        },
+        "version": {
+          "type": "number",
+          "description": "Credential version index for password resets"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Current active Firebase Auth UID"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["phone", "version", "userId"]
+    }
+  },
+  "firestore": {
+    "/donors/{donorId}": {
+      "schema": {
+        "$ref": "#/entities/Donor"
+      },
+      "description": "Public directory of blood donors who gave consent to help patients"
+    },
+    "/urgent_requests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/UrgentRequest"
+      },
+      "description": "Community urgent blood emergency requests"
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User account profiles"
+    },
+    "/phone_auth/{phone}": {
+      "schema": {
+        "$ref": "#/entities/PhoneAuthRecord"
+      },
+      "description": "Phone auth version mapping for direct login and scrambled password reset"
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/AppSettings"
+      },
+      "description": "Global app configuration controlled by admins"
+    }
+  }
+}

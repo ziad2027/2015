@@ -1,0 +1,9 @@
+{
+  "appId": "com.blood.qataba",
+  "appName": "قطرة دم - قعطبة",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "قطرة دم",
+  "description": "تطبيق خيري متكامل للتبرع بالدم يربط المتبرعين بالمحتاجين وحالات الطوارئ العاجلة في الضالع قعطبة",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
