@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # يتيح تشغيل البناء يدوياً في أي وقت بضغطة زر واحدة من GitHub
+  workflow_dispatch: # تشغيل البناء يدوياً في أي وقت بضغطة زر واحدة
 
 permissions:
   contents: write
@@ -19,64 +19,70 @@ jobs:
       - name: 📥 استنساخ المستودع (Checkout Repository)
         uses: actions/checkout@v4
 
-      - name: ☕ تثبيت بيئة جافا (Set up Java 17)
+      - name: ☕ إعداد بيئة جافا (Set up Java 17)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 ضبط بيئة الأندرويد (Set up Android SDK)
-        uses: android-actions/setup-android@v3
-
-      - name: 🟢 تثبيت Node.js (Set up Node 20)
+      - name: 🟢 إعداد Node.js (Set up Node 20)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: 📦 تثبيت حزم المشروع (Install Dependencies)
+      - name: 📦 تثبيت الحزم (Install Dependencies)
         run: |
           npm install --legacy-peer-deps
 
-      - name: 🏗️ بناء تطبيق الويب وتحديث الأندرويد (Build & Sync)
+      - name: 🏗️ بناء صفحات الويب (Build Web Assets)
         run: |
           npm run build
-          # تحديث ملفات الويب داخل تطبيق الأندرويد
+
+      - name: 📱 تجهيز ومزامنة بيئة الأندرويد (Setup Android Project)
+        run: |
+          # في حال لم يكن مجلد android موجوداً في المستودع، يتم توليده تلقائياً
+          if [ ! -d "android" ]; then
+            echo "مجلد الأندرويد غير موجود، جاري إنشاؤه عبر Capacitor..."
+            npx cap add android
+          fi
+          
+          # مزامنة ملفات الويب المبنية مع الأندرويد
           npx cap sync android
 
-      - name: ⚙️ بناء ملف الـ APK عبر Gradle
+      - name: ⚙️ بناء ملف APK بواسطة Gradle (Build APK)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
-      - name: 🏷️ استخراج وتسمية ملف الـ APK باسم Qatra_Dam.apk
+      - name: 🏷️ تجهيز ملف Qatra_Dam.apk
         run: |
           mkdir -p build-output
           # نسخ ملف الـ APK الناتج بالاسم المطلوب بدقة
           cp android/app/build/outputs/apk/debug/app-debug.apk build-output/Qatra_Dam.apk
-          echo "تم استخراج ملف الـ APK بنجاح بالاسم المطلوب:"
+          echo "تم استخراج ملف الـ APK بنجاح:"
           ls -lh build-output/
 
-      - name: 🚀 رفع ملف Qatra_Dam.apk ضمن الـ Artifacts
+      - name: 🚀 رفع ملف APK كـ Artifact (متاح للتحميل دائماً)
         uses: actions/upload-artifact@v4
         with:
-          name: Qatra_Dam
+          name: Qatra_Dam-APK
           path: build-output/Qatra_Dam.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: 🌟 نشر ملف Qatra_Dam.apk في GitHub Releases (للتحميل المباشر للهاتف بصيغة APK دون أي ضغط ZIP)
+      - name: 🌟 نشر ملف APK في GitHub Releases (تحميل مباشر بصيغة APK)
         uses: softprops/action-gh-release@v2
+        continue-on-error: true # لضمان عدم فشل البناء إذا كانت صلاحيات المستودع للقراءة فقط
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         with:
           tag_name: "v1.0.0"
           name: "تطبيق قطرة دم - قعطبة (Qatra_Dam.apk)"
           body: |
             ### 📱 تطبيق قطرة دم تنقذ حياة إنسان - مديرية قعطبة
-            تم بناء ملف التطبيق الحقيقي بنجاح للأندرويد:
-            - **اسم الملف:** `Qatra_Dam.apk`
-            - **طريقة التثبيت:** اضغط مباشرة على الرابط المرفق أدناه `Qatra_Dam.apk` من هاتفك الأندرويد ليبدأ التحميل والتثبيت الفوري دون الحاجة لفك ضغط.
+            تم بناء ملف التطبيق بنجاح بصيغة APK.
+            اضغط على ملف `Qatra_Dam.apk` المرفق بالأسفل لتثبيته فوراً على هاتفك.
           draft: false
           prerelease: false
           files: build-output/Qatra_Dam.apk
