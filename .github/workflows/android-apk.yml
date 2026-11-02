@@ -1,4 +1,4 @@
-name: Build Android APK (قطرة دم - قعطبة)
+name: Build Android APK Package (قطرة دم - قعطبة)
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Build & Export Qatra_Dam.apk
+    name: Build & Package Qatra_Dam.apk
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +31,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: 📦 تثبيت الحزم (Install Dependencies)
+      - name: 📦 تثبيت حزم المشروع (Install Dependencies)
         run: |
           npm install --legacy-peer-deps
 
@@ -39,52 +39,73 @@ jobs:
         run: |
           npm run build
 
-      - name: 📱 تجهيز ومزامنة بيئة الأندرويد (Setup Android Project)
+      - name: 📱 تجهيز ومزامنة تطبيق الأندرويد (Setup Android Platform)
         run: |
-          # في حال لم يكن مجلد android موجوداً في المستودع، يتم توليده تلقائياً
           if [ ! -d "android" ]; then
-            echo "مجلد الأندرويد غير موجود، جاري إنشاؤه عبر Capacitor..."
+            echo "جاري إنشاء بيئة الأندرويد عبر Capacitor..."
             npx cap add android
           fi
-          
-          # مزامنة ملفات الويب المبنية مع الأندرويد
           npx cap sync android
 
-      - name: ⚙️ بناء ملف APK بواسطة Gradle (Build APK)
+      - name: ⚙️ بناء ملف الـ APK عبر Gradle (Build APK)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cd ..
 
-      - name: 🏷️ تجهيز ملف Qatra_Dam.apk
+      - name: 🗜️ تجهيز الحزمة المضغوطة (ZIP) المحتوية على ملف APK
         run: |
-          mkdir -p build-output
-          # نسخ ملف الـ APK الناتج بالاسم المطلوب بدقة
-          cp android/app/build/outputs/apk/debug/app-debug.apk build-output/Qatra_Dam.apk
-          echo "تم استخراج ملف الـ APK بنجاح:"
-          ls -lh build-output/
+          mkdir -p package_to_zip
+          
+          # نسخ ملف الـ APK الحقيقي بالاسم المطلوب
+          cp android/app/build/outputs/apk/debug/app-debug.apk package_to_zip/Qatra_Dam.apk
+          
+          # إضافة ملف نصي توضيحي مع الملف
+          cat << 'EOF' > package_to_zip/تعليمات_التثبيت.txt
+          =============================================
+          تطبيق قطرة دم تنقذ حياة إنسان - مديرية قعطبة
+          =============================================
+          
+          خطوات تثبيت التطبيق على هاتفك الأندرويد:
+          1. ستجد ملف التطبيق بجانب هذا الملف باسم: (Qatra_Dam.apk).
+          2. اضغط على ملف Qatra_Dam.apk.
+          3. إذا طلب هاتفك الإذن لتثبيت التطبيقات من هذا المصدر، اضغط "الإعدادات" ثم فعّل "السماح بتثبيت التطبيقات غير المعروفة".
+          4. اضغط "تثبيت" (Install) وسيتم تثبيت التطبيق على هاتفك بنجاح.
+          EOF
+          
+          # إنشاء الأرشيف المضغوط ZIP
+          cd package_to_zip
+          zip -r ../Qatra_Dam_Package.zip Qatra_Dam.apk تعليمات_التثبيت.txt
+          cd ..
+          
+          echo "تم إنشاء الملف المضغوط بنجاح:"
+          ls -lh Qatra_Dam_Package.zip
 
-      - name: 🚀 رفع ملف APK كـ Artifact (متاح للتحميل دائماً)
+      - name: 🚀 رفع الملف المضغوط (ZIP) كـ Artifact للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Qatra_Dam-APK
-          path: build-output/Qatra_Dam.apk
+          name: Qatra_Dam_Android_App
+          path: Qatra_Dam_Package.zip
           if-no-files-found: error
           retention-days: 30
 
-      - name: 🌟 نشر ملف APK في GitHub Releases (تحميل مباشر بصيغة APK)
+      - name: 🌟 نشر الحزمة المضغوطة وملف APK في Releases
         uses: softprops/action-gh-release@v2
-        continue-on-error: true # لضمان عدم فشل البناء إذا كانت صلاحيات المستودع للقراءة فقط
+        continue-on-error: true
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         with:
           tag_name: "v1.0.0"
           name: "تطبيق قطرة دم - قعطبة (Qatra_Dam.apk)"
           body: |
             ### 📱 تطبيق قطرة دم تنقذ حياة إنسان - مديرية قعطبة
-            تم بناء ملف التطبيق بنجاح بصيغة APK.
-            اضغط على ملف `Qatra_Dam.apk` المرفق بالأسفل لتثبيته فوراً على هاتفك.
+            تم تجهيز الحزمة المضغوطة:
+            - الملف المضغوط: `Qatra_Dam_Package.zip` (يحتوي بداخله على `Qatra_Dam.apk`).
+            - أو يمكنك تحميل ملف الـ APK مباشرة: `Qatra_Dam.apk`.
           draft: false
           prerelease: false
-          files: build-output/Qatra_Dam.apk
+          files: |
+            Qatra_Dam_Package.zip
+            package_to_zip/Qatra_Dam.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
