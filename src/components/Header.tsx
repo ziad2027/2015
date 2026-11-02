@@ -6,6 +6,8 @@ interface HeaderProps {
   onOpenAuth: () => void;
   onOpenInstallModal: () => void;
   onGoToProfile: () => void;
+  onGoToUrgent?: () => void;
+  onOpenNotifications?: () => void;
   onOpenRoleModal: () => void;
   unreadCount?: number;
 }
@@ -14,6 +16,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onOpenInstallModal,
   onGoToProfile,
+  onGoToUrgent,
+  onOpenNotifications,
   onOpenRoleModal,
   unreadCount = 2,
 }) => {
@@ -59,8 +63,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Left Side: Buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Logout button removed as per user request */}
-
           <button
             onClick={onOpenRoleModal}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black transition-all border shadow-xs ${
@@ -76,12 +78,13 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
-            onClick={onGoToProfile}
-            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-center transition-colors shadow-xs"
+            onClick={onOpenNotifications || onGoToUrgent || onGoToProfile}
+            title="الإشعارات والتنبيهات الواردة"
+            className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
           >
             <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center border-2 border-white shadow-xs">
+              <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center border-2 border-white shadow-xs animate-pulse">
                 {unreadCount}
               </span>
             )}

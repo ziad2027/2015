@@ -99,7 +99,7 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "revision": "57ba7c3d61171cc3f05b92c877b117ca"
   }, {
     "url": "index.html",
-    "revision": "238cf5da7033ef6f5751d2db65b607dd"
+    "revision": "e869cc64b5737c4b0688d35312d674d6"
   }, {
     "url": "icon.svg",
     "revision": "d15cd26172a59d5a57aca17e2e55ef36"
@@ -110,16 +110,16 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "url": "assets/rolldown-runtime-la_ZsWYt.js",
     "revision": null
   }, {
-    "url": "assets/react-vendor-C3RQjzdA.js",
+    "url": "assets/react-vendor-L-AHi2Wl.js",
     "revision": null
   }, {
-    "url": "assets/index-D44ZqZBY.css",
+    "url": "assets/index-Cz9eGNO5.js",
     "revision": null
   }, {
-    "url": "assets/index-BObh0CAO.js",
+    "url": "assets/index-CZE18Cnd.css",
     "revision": null
   }, {
-    "url": "assets/icons-vendor-CiP5-56F.js",
+    "url": "assets/icons-vendor-6rZTieys.js",
     "revision": null
   }, {
     "url": "assets/firebase-vendor-BrgdeQ0n.js",
@@ -141,6 +141,9 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "revision": null
   }, {
     "url": "assets/aistudio/Screenshot_________-_______d5edeb64.png",
+    "revision": null
+  }, {
+    "url": "assets/aistudio/Screenshot_________-_______b2559f27.png",
     "revision": null
   }, {
     "url": "assets/aistudio/Screenshot_________-_______a3d3c275.png",
