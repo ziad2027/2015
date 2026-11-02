@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # تشغيل البناء يدوياً في أي وقت بضغطة زر واحدة
+  workflow_dispatch: # تشغيل البناء يدوياً في أي وقت بضغطة زر واحدة من GitHub
 
 permissions:
   contents: write
@@ -19,11 +19,11 @@ jobs:
       - name: 📥 استنساخ المستودع (Checkout Repository)
         uses: actions/checkout@v4
 
-      - name: ☕ إعداد بيئة جافا (Set up Java 17)
-        uses: actions/setup-java@v4
+      - name: ☕ إعداد بيئة جافا (Set up Java 21)
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: 🟢 إعداد Node.js (Set up Node 22)
         uses: actions/setup-node@v4
