@@ -99,7 +99,7 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "revision": "57ba7c3d61171cc3f05b92c877b117ca"
   }, {
     "url": "index.html",
-    "revision": "e869cc64b5737c4b0688d35312d674d6"
+    "revision": "9aaac72ae0be4890335aeaf2b3e14228"
   }, {
     "url": "icon.svg",
     "revision": "d15cd26172a59d5a57aca17e2e55ef36"
@@ -113,10 +113,10 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "url": "assets/react-vendor-L-AHi2Wl.js",
     "revision": null
   }, {
-    "url": "assets/index-Cz9eGNO5.js",
+    "url": "assets/index-jaD7Ua9a.js",
     "revision": null
   }, {
-    "url": "assets/index-CZE18Cnd.css",
+    "url": "assets/index-ivj3QWo9.css",
     "revision": null
   }, {
     "url": "assets/icons-vendor-6rZTieys.js",
@@ -125,85 +125,13 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "url": "assets/firebase-vendor-BrgdeQ0n.js",
     "revision": null
   }, {
-    "url": "assets/aistudio/________pwabuilder_score__1__a416ddcf.png",
+    "url": "assets/images/blood_donation_hero_banner.jpg",
     "revision": null
   }, {
-    "url": "assets/aistudio/Screenshot_________-_______fa4c6ab4.png",
+    "url": "assets/images/blood_benefits_poster.jpg",
     "revision": null
   }, {
-    "url": "assets/aistudio/Screenshot_________-_______f2f4a03c.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______f0b76602.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______ed827de0.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______d5edeb64.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______b2559f27.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______a3d3c275.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______9d2c2229.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______9afd9aec.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______9acdca25.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______83560749.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______7f4edde0.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______75df6db4.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______6e3addc0.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______5765ebee.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______4fdd1406.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______4d95b1b4.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______1e0c4f3f.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/Screenshot_________-_______0b969687.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/IMG_________________bbacd415.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/IMG_________________968a2b82.jpg",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/IMG_________________8268e9cb.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/IMG_________________7d764930.png",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/IMG-20261017-WA0049_72bb8e59.jpg",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/1793581205833_a58b2e3a.jpg",
-    "revision": null
-  }, {
-    "url": "assets/aistudio/1793046289767_eb8707e3.jpg",
+    "url": "assets/images/app_logo_icon.jpg",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

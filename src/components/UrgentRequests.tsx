@@ -22,6 +22,46 @@ import { UrgentRequest, BloodType, BLOOD_TYPES, UrgencyLevel } from '../types';
 import { createUrgentRequest, updateRequestStatus, deleteUrgentRequest } from '../services/donorService';
 import { YemenPhoneInput } from './YemenPhoneInput';
 
+// Helper to check if urgent request is expired (older than 48 hours)
+export const isUrgentRequestExpired = (req: UrgentRequest): boolean => {
+  if (!req.createdAt) return false;
+  let createdMs = 0;
+  if (typeof req.createdAt?.toMillis === 'function') {
+    createdMs = req.createdAt.toMillis();
+  } else if (req.createdAt?.seconds) {
+    createdMs = req.createdAt.seconds * 1000;
+  } else if (typeof req.createdAt === 'number') {
+    createdMs = req.createdAt;
+  } else if (typeof req.createdAt === 'string') {
+    createdMs = new Date(req.createdAt).getTime();
+  } else if (req.createdAt instanceof Date) {
+    createdMs = req.createdAt.getTime();
+  }
+  if (!createdMs || isNaN(createdMs)) return false;
+  // 48 hours in milliseconds
+  return (Date.now() - createdMs) > 48 * 60 * 60 * 1000;
+};
+
+// Helper to get remaining hours out of 48h
+export const getUrgentRemainingHours = (req: UrgentRequest): number => {
+  if (!req.createdAt) return 48;
+  let createdMs = Date.now();
+  if (typeof req.createdAt?.toMillis === 'function') {
+    createdMs = req.createdAt.toMillis();
+  } else if (req.createdAt?.seconds) {
+    createdMs = req.createdAt.seconds * 1000;
+  } else if (typeof req.createdAt === 'number') {
+    createdMs = req.createdAt;
+  } else if (typeof req.createdAt === 'string') {
+    createdMs = new Date(req.createdAt).getTime();
+  } else if (req.createdAt instanceof Date) {
+    createdMs = req.createdAt.getTime();
+  }
+  const elapsed = Date.now() - createdMs;
+  const leftMs = (48 * 60 * 60 * 1000) - elapsed;
+  return Math.max(0, Math.floor(leftMs / (60 * 60 * 1000)));
+};
+
 interface UrgentRequestsProps {
   urgentRequests: UrgentRequest[];
   onOpenAuth: () => void;
@@ -34,6 +74,7 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
   const { currentUser } = useAuth();
   const [filterStatus, setFilterStatus] = useState<'open' | 'fulfilled' | 'all'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [whatsAppTargetReq, setWhatsAppTargetReq] = useState<UrgentRequest | null>(null);
 
   // New Request Form state
   const [patientName, setPatientName] = useState('');
@@ -47,15 +88,17 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Filter requests
-  const filteredRequests = urgentRequests.filter((req) => {
+  // Filter requests (only active within 48h limit)
+  const validRequests = urgentRequests.filter((req) => !isUrgentRequestExpired(req));
+
+  const filteredRequests = validRequests.filter((req) => {
     if (filterStatus === 'open') return req.status === 'open';
     if (filterStatus === 'fulfilled') return req.status === 'fulfilled';
     return true;
   });
 
-  const openCount = urgentRequests.filter((r) => r.status === 'open').length;
-  const fulfilledCount = urgentRequests.filter((r) => r.status === 'fulfilled').length;
+  const openCount = validRequests.filter((r) => r.status === 'open').length;
+  const fulfilledCount = validRequests.filter((r) => r.status === 'fulfilled').length;
 
   // Handle new request submit
   const handleCreateRequest = async (e: React.FormEvent) => {
@@ -145,6 +188,10 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
   ];
 
   const handleWhatsApp = (req: UrgentRequest) => {
+    setWhatsAppTargetReq(req);
+  };
+
+  const confirmWhatsAppNavigation = (req: UrgentRequest) => {
     const cleanNumber = req.contactPhone.replace(/\D/g, '');
     const international = cleanNumber.startsWith('967') ? cleanNumber : `967${cleanNumber}`;
     const text = encodeURIComponent(
@@ -273,6 +320,16 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                       <span className="text-[11px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
                         مطلوب {req.unitsNeeded} كيس دم
                       </span>
+
+                      {!isFulfilled && (
+                        <span 
+                          className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full"
+                          title="صلاحية ظهور البلاغ 48 ساعة فقط ثم يختفي تلقائياً"
+                        >
+                          <Clock className="w-3 h-3 text-amber-600" />
+                          <span>متبقي {getUrgentRemainingHours(req)} ساعة</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Patient & Hospital */}
@@ -574,6 +631,14 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                 />
               </div>
 
+              {/* 48-Hour Auto-Expiry Notice */}
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs font-semibold flex items-start gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  تنويه: يستمر ظهور طلب الدم العاجل لمدة 48 ساعة فقط من وقت الإرسال ثم يختفي تلقائياً لضمان مصداقية وحداثة البلاغات في قعطبة.
+                </span>
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -591,6 +656,74 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Departure Confirmation Modal */}
+      {whatsAppTargetReq && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setWhatsAppTargetReq(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100 text-center font-['Cairo',sans-serif]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
+              <MessageCircle className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">هل تريد المغادرة إلى واتساب؟</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                أنت على وشك مغادرة التطبيق والتواصل عبر واتساب للمساعدة في إنقاذ حالة المريض:
+              </p>
+            </div>
+
+            <div className="bg-rose-50/70 p-3 rounded-2xl border border-rose-100 text-right space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-900">{whatsAppTargetReq.patientName}</span>
+                <span className="text-[10px] bg-red-600 text-white font-black px-2 py-0.5 rounded-full">
+                  فصيلة {whatsAppTargetReq.bloodType}
+                </span>
+              </div>
+              <div className="text-xs text-slate-600 font-bold flex items-center justify-between">
+                <span>المستشفى:</span>
+                <span className="text-slate-800 font-extrabold">{whatsAppTargetReq.hospital}</span>
+              </div>
+              <div className="text-xs text-slate-600 font-bold flex items-center justify-between">
+                <span>المسؤول:</span>
+                <span className="text-slate-800">{whatsAppTargetReq.contactName}</span>
+              </div>
+              <div className="text-xs text-slate-600 font-bold flex items-center justify-between">
+                <span>الهاتف:</span>
+                <span dir="ltr" className="font-mono text-emerald-800 font-extrabold">{whatsAppTargetReq.contactPhone}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = whatsAppTargetReq;
+                  setWhatsAppTargetReq(null);
+                  confirmWhatsAppNavigation(target);
+                }}
+                className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>نعم، الذهاب للواتس</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWhatsAppTargetReq(null)}
+                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
           </div>
         </div>
       )}

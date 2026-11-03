@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User as UserIcon, LogOut } from 'lucide-react';
+import { Bell, User as UserIcon, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
@@ -9,6 +9,8 @@ interface HeaderProps {
   onGoToUrgent?: () => void;
   onOpenNotifications?: () => void;
   onOpenRoleModal: () => void;
+  onGlobalRefresh?: () => void;
+  isRefreshing?: boolean;
   unreadCount?: number;
 }
 
@@ -19,11 +21,13 @@ export const Header: React.FC<HeaderProps> = ({
   onGoToUrgent,
   onOpenNotifications,
   onOpenRoleModal,
+  onGlobalRefresh,
+  isRefreshing = false,
   unreadCount = 2,
 }) => {
   const { activeRole, logout } = useAuth();
 
-  const iconPath = '/assets/aistudio/1793046289767_eb8707e3.jpg';
+  const iconPath = '/assets/images/app_logo_icon.jpg';
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-xs">
@@ -63,6 +67,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Left Side: Buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Comprehensive App Refresh Button */}
+          {onGlobalRefresh && (
+            <button
+              onClick={onGlobalRefresh}
+              disabled={isRefreshing}
+              title="تحديث شامل للتطبيق وسحب أي إضافات وتعديلات جديدة فوراً"
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                isRefreshing ? 'opacity-80' : 'active:scale-95'
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
+            </button>
+          )}
+
           <button
             onClick={onOpenRoleModal}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black transition-all border shadow-xs ${
@@ -78,7 +96,15 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
-            onClick={onOpenNotifications || onGoToUrgent || onGoToProfile}
+            onClick={() => {
+              if (onOpenNotifications) {
+                onOpenNotifications();
+              } else if (onGoToUrgent) {
+                onGoToUrgent();
+              } else {
+                onGoToProfile();
+              }
+            }}
             title="الإشعارات والتنبيهات الواردة"
             className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-50 border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
           >

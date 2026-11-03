@@ -15,7 +15,10 @@ import {
   FolderOpen,
   Edit3,
   Phone,
-  MapPin
+  MapPin,
+  Megaphone,
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -30,6 +33,8 @@ interface AdminDashboardProps {
   donors?: Donor[];
   onEditDonor?: (donorId: string) => void;
   onDeleteDonor?: (donorId: string, phone?: string) => Promise<void>;
+  onGlobalRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
@@ -37,10 +42,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   donors = [],
   onEditDonor,
   onDeleteDonor,
+  onGlobalRefresh,
+  isRefreshing = false,
 }) => {
   const { userProfile, currentUser, activeRole, switchActiveRole, loginWithGoogle } = useAuth();
   const [importText, setImportText] = useState('');
   const [announcement, setAnnouncement] = useState('');
+  const [announcementType, setAnnouncementType] = useState<'general' | 'urgent' | 'campaign'>('general');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -78,7 +86,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       try {
         const snap = await getDoc(doc(db, 'settings', 'global'));
         if (snap.exists()) {
-          setAnnouncement(snap.data().announcement || '');
+          const data = snap.data();
+          setAnnouncement(data.announcement || data.noticeMessage || '');
+          if (data.announcementType) {
+            setAnnouncementType(data.announcementType);
+          }
         }
       } catch (e) {}
     };
@@ -91,7 +103,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (pinInput.trim() === '635215' || userProfile?.role === 'admin' || currentUser?.email === 'ziadalsyyadi@gmail.com') {
       switchActiveRole('admin');
     } else {
-      setPinError('رمز PIN السرّي غير صحيح. (الرمز الافتراضي: 635215)');
+      setPinError('رمز PIN السرّي غير صحيح. يرجى إدخال الرمز المعتمد لإدارة التطبيق.');
     }
   };
 
@@ -160,7 +172,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               maxLength={10}
               value={pinInput} 
               onChange={(e) => setPinInput(e.target.value)}
-              placeholder="أدخل الرمز السرّي (مثلاً: 635215)" 
+              placeholder="أدخل رمز PIN للمسؤول..." 
               className="w-full p-3 rounded-xl border border-slate-300 text-center tracking-widest text-base font-mono font-bold focus:ring-2 focus:ring-amber-400 outline-hidden bg-slate-50"
               autoFocus
               required
@@ -230,12 +242,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       await setDoc(doc(db, 'settings', 'global'), {
         announcement: announcement.trim(),
         noticeMessage: announcement.trim(),
+        announcementType,
+        announcementTime: new Date().toISOString(),
+        announcementActive: Boolean(announcement.trim()),
         updatedAt: serverTimestamp(),
         updatedBy: currentUser.uid
+      }, { merge: true });
+      setResult({ 
+        success: true, 
+        message: announcement.trim() 
+          ? 'تم تعميم الرسالة ونشرها بنجاح لتظهر فوراً عند جميع المشتركين في الإشعارات! ✓' 
+          : 'تم تحديث الإعدادات بنجاح!' 
       });
-      setResult({ success: true, message: 'تم نشر التحديث لكل المشتركين بنجاح وتزامن فوري!' });
     } catch (err: any) {
       setResult({ success: false, message: `فشل الحفظ: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAnnouncement = async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        announcement: '',
+        noticeMessage: '',
+        announcementActive: false,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid
+      }, { merge: true });
+      setAnnouncement('');
+      setResult({ success: true, message: 'تم إلغاء ومسح الرسالة من إشعارات جميع المشتركين بنجاح. ✓' });
+    } catch (err: any) {
+      setResult({ success: false, message: `فشل المسح: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -344,6 +385,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onGlobalRefresh && (
+            <button
+              onClick={onGlobalRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors text-xs font-bold shadow-xs active:scale-95 disabled:opacity-50"
+              title="تحديث شامل للتطبيق وسحب أي إضافات وتعديلات جديدة فوراً"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'جارٍ التحديث...' : 'تحديث شامل للتطبيق'}</span>
+            </button>
+          )}
+
           <button 
             onClick={() => {
               switchActiveRole('user');
@@ -433,33 +486,112 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 text-slate-900">
-            <Settings className="w-5 h-5" />
-            <h2 className="text-sm font-black">إعدادات النظام والتنبيهات</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900">
+              <Megaphone className="w-5 h-5 text-amber-600" />
+              <h2 className="text-sm font-black">إرسال رسالة تظهر عند الجميع في الإشعارات</h2>
+            </div>
+            {announcement && (
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+                <span>نشط حالياً</span>
+              </span>
+            )}
           </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            تحكم في الرسائل التي تظهر لجميع مستخدمي التطبيق في قعطبة.
+          <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            اكتب رسالة أو تعميم لتظهر لجميع المشتركين في نافذة الإشعارات والشريط التنبيهي فوراً:
           </p>
           
           <div className="space-y-3">
+            {/* Announcement Category Selector */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">إعلان الشريط العلوي</label>
+              <label className="block text-[10px] font-bold text-slate-500 mb-1">نوع الإشعار:</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setAnnouncementType('general')}
+                  className={`py-1.5 px-2 rounded-xl text-center text-xs font-bold border transition-all ${
+                    announcementType === 'general'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  تنويه عام
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnnouncementType('urgent')}
+                  className={`py-1.5 px-2 rounded-xl text-center text-xs font-bold border transition-all ${
+                    announcementType === 'urgent'
+                      ? 'bg-red-600 text-white border-red-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  نداء طارئ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnnouncementType('campaign')}
+                  className={`py-1.5 px-2 rounded-xl text-center text-xs font-bold border transition-all ${
+                    announcementType === 'campaign'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
+                >
+                  حملة تبرع
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">نص الرسالة المنشورة للجميع:</label>
               <textarea
                 value={announcement}
                 onChange={(e) => setAnnouncement(e.target.value)}
-                placeholder="اكتب رسالة ترحيب أو تنبيه عاجل..."
-                className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-medium"
+                placeholder="اكتب التنويه أو الإشعار الذي تريده أن يظهر لجميع المستخدمين فوراً..."
+                rows={3}
+                className="w-full p-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-hidden text-xs font-medium"
               />
             </div>
             
-            <button
-              onClick={handleSaveSettings}
-              disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-black transition-all flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>حفظ الإعدادات</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveSettings}
+                disabled={loading || !announcement.trim()}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-md shadow-amber-200 transition-all flex items-center justify-center gap-1.5 active:scale-98 disabled:opacity-50 cursor-pointer"
+              >
+                <Megaphone className="w-4 h-4" />
+                <span>إرسال وتعميم في الإشعارات للجميع</span>
+              </button>
+
+              {announcement.trim() && (
+                <button
+                  type="button"
+                  onClick={handleClearAnnouncement}
+                  disabled={loading}
+                  className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                  title="مسح الإشعار الحالي"
+                >
+                  مسح الإشعار
+                </button>
+              )}
+            </div>
+
+            {/* Comprehensive App Refresh Button in Admin Dashboard */}
+            {onGlobalRefresh && (
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={onGlobalRefresh}
+                  disabled={isRefreshing}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-2xs active:scale-98"
+                >
+                  <RefreshCw className={`w-4 h-4 text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshing ? 'جارٍ التحديث الشامل...' : '🔄 زر التحديث الشامل للتطبيق وسحب أي إضافة جديدة'}</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 border-t border-slate-100">

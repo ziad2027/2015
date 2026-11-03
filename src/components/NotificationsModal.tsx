@@ -1,12 +1,15 @@
 import React from 'react';
-import { X, Bell, ShieldAlert, Phone, AlertCircle, CheckCircle2, Megaphone, ArrowLeft, Hospital } from 'lucide-react';
+import { X, Bell, ShieldAlert, Phone, AlertCircle, CheckCircle2, Megaphone, ArrowLeft, Hospital, Clock } from 'lucide-react';
 import { UrgentRequest } from '../types';
+import { isUrgentRequestExpired, getUrgentRemainingHours } from './UrgentRequests';
 
 interface NotificationsModalProps {
   isOpen: boolean;
   onClose: () => void;
   urgentRequests: UrgentRequest[];
   announcement?: string;
+  announcementType?: 'general' | 'urgent' | 'campaign';
+  announcementTime?: string;
   onGoToUrgent: () => void;
 }
 
@@ -15,11 +18,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   onClose,
   urgentRequests,
   announcement,
+  announcementType = 'general',
+  announcementTime,
   onGoToUrgent,
 }) => {
   if (!isOpen) return null;
 
-  const openRequests = urgentRequests.filter((r) => r.status === 'open');
+  // Filter requests (only active within 48h limit)
+  const openRequests = urgentRequests.filter((r) => r.status === 'open' && !isUrgentRequestExpired(r));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -38,6 +44,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 الإشعارات والتنبيهات الواردة
               </h3>
               <p className="text-xs text-red-100 font-medium">
+                {announcement ? 'يوجد تعميم جديد من إدارة التطبيق • ' : ''}
                 {openRequests.length > 0 
                   ? `يوجد ${openRequests.length} طلب دم عاجل بحاجة لمتبرعين` 
                   : 'لا توجد طلبات دم عاجلة حالياً'}
@@ -56,16 +63,32 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Modal Body */}
         <div className="p-4 overflow-y-auto space-y-4 grow">
           
-          {/* Global Administrative Announcement */}
+          {/* Global Administrative Announcement (Broadcasted by Admin to Everyone) */}
           {announcement && (
-            <div className="bg-amber-50 border border-amber-200/70 rounded-2xl p-3.5 flex items-start gap-3 shadow-xs">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                <Megaphone className="w-4 h-4" />
+            <div className="bg-linear-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <Megaphone className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-amber-950">تعميم رسمي من إدارة التطبيق</h4>
+                    <span className="text-[10px] text-amber-800 font-bold">
+                      {announcementType === 'urgent' 
+                        ? '🔴 نداء استغاثة طارئ' 
+                        : announcementType === 'campaign' 
+                        ? '🟢 حملة تبرع بالدم في قعطبة' 
+                        : '📢 تنويه إداري عام'}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-amber-200/90 text-amber-900 font-black px-2.5 py-0.5 rounded-full border border-amber-300">
+                  إشعار لجميع المشتركين
+                </span>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-black text-amber-900">تنويه هام من إدارة التطبيق</h4>
-                <p className="text-xs text-amber-800 leading-relaxed font-semibold">{announcement}</p>
-              </div>
+              <p className="text-xs text-amber-950 leading-relaxed font-bold bg-white/80 p-3 rounded-xl border border-amber-200/70 shadow-2xs">
+                {announcement}
+              </p>
             </div>
           )}
 
@@ -113,10 +136,16 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="text-left shrink-0">
+                      <div className="text-left shrink-0 space-y-1">
                         <span className="text-[11px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-lg inline-block">
                           {req.unitsNeeded} أكياس
                         </span>
+                        <div>
+                          <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            <span>متبقي {getUrgentRemainingHours(req)} س</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
 

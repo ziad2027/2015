@@ -2,7 +2,7 @@ import React from 'react';
 import { Heart, Sparkles, Award } from 'lucide-react';
 
 export const BloodDonationEducationalInfo: React.FC = () => {
-  const posterImagePath = '/assets/aistudio/1793581205833_a58b2e3a.jpg';
+  const posterImagePath = '/assets/images/blood_benefits_poster.jpg';
 
   return (
     <div className="space-y-6 text-right pb-28 sm:pb-36 font-['Cairo',sans-serif] max-w-2xl mx-auto select-none">

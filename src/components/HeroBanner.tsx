@@ -23,7 +23,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onOpenCompatibility,
 }) => {
   const [showImageZoom, setShowImageZoom] = useState(false);
-  const heroImagePath = '/assets/aistudio/IMG-20261017-WA0049_72bb8e59.jpg';
+  const heroImagePath = '/assets/images/blood_donation_hero_banner.jpg';
 
   const activeUrgentCount = urgentRequests.filter((r) => r.status === 'open').length;
   const fulfilledCount = urgentRequests.filter((r) => r.status === 'fulfilled').length;

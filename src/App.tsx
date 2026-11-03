@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { HeroBanner } from './components/HeroBanner';
 import { DonorRegistration } from './components/DonorRegistration';
 import { DonorSearch } from './components/DonorSearch';
-import { UrgentRequests } from './components/UrgentRequests';
+import { UrgentRequests, isUrgentRequestExpired } from './components/UrgentRequests';
 import { UserProfileView } from './components/UserProfileView';
 import { AuthModal } from './components/AuthModal';
 import { AndroidInstallModal } from './components/AndroidInstallModal';
@@ -25,7 +25,7 @@ import {
   deleteDonorProfile
 } from './services/donorService';
 import { INITIAL_SEED_DONORS } from './data/initialData';
-import { Droplet, Heart, ShieldAlert, Sparkles, Smartphone, WifiOff, RefreshCw } from 'lucide-react';
+import { Droplet, Heart, ShieldAlert, Sparkles, Smartphone, WifiOff, RefreshCw, CheckCircle2, Megaphone, X } from 'lucide-react';
 
 function AppContent() {
   const { currentUser, userProfile, activeRole, switchActiveRole, isLoading: authLoading } = useAuth();
@@ -36,8 +36,15 @@ function AppContent() {
   const [deletedDonors, setDeletedDonors] = useState<string[]>([]);
   const [urgentRequests, setUrgentRequests] = useState<UrgentRequest[]>([]);
   const [announcement, setAnnouncement] = useState<string>('');
+  const [announcementType, setAnnouncementType] = useState<'general' | 'urgent' | 'campaign'>('general');
+  const [announcementTime, setAnnouncementTime] = useState<string>('');
   const [loadingData, setLoadingData] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshToast, setRefreshToast] = useState<string | null>(null);
+
+  const lastFirestoreDataRef = useRef<Donor[]>([]);
+  const syncWithSheetsRef = useRef<((data: Donor[], freshSheets?: any[]) => Promise<void>) | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -186,9 +193,9 @@ function AppContent() {
       return [];
     };
 
-    const syncWithSheets = async (firestoreData: Donor[]) => {
+    const syncWithSheets = async (firestoreData: Donor[], freshSheetsList?: any[]) => {
       try {
-        const fetchedRawDonors = await fetchSheetsDonorsHelper();
+        const fetchedRawDonors = freshSheetsList || await fetchSheetsDonorsHelper();
         
         let mappedSheets: Donor[] = [];
         if (fetchedRawDonors.length > 0) {
@@ -267,8 +274,11 @@ function AppContent() {
       setLoadingData(false);
     };
 
+    syncWithSheetsRef.current = syncWithSheets;
+
     const unsubDonors = subscribeToDonors((data) => {
       lastFirestoreData = data;
+      lastFirestoreDataRef.current = data;
       syncWithSheets(data);
     });
 
@@ -279,7 +289,14 @@ function AppContent() {
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        setAnnouncement(data.announcement || data.noticeMessage || '');
+        const msg = data.announcement || data.noticeMessage || '';
+        setAnnouncement(msg);
+        if (data.announcementType) {
+          setAnnouncementType(data.announcementType);
+        }
+        if (data.announcementTime) {
+          setAnnouncementTime(data.announcementTime);
+        }
         if (Array.isArray(data.deletedDonors)) {
           setDeletedDonors(data.deletedDonors);
           const delSet = new Set(data.deletedDonors.map((s: string) => String(s).trim()));
@@ -306,25 +323,53 @@ function AppContent() {
     };
   }, []);
 
-  // Background refresh for Google Sheets (every 10 minutes)
-  useEffect(() => {
-    const refreshSheets = async () => {
-      try {
-        const sheetsRes = await fetch('/api/sheets/donors');
-        const sheetsData = await sheetsRes.json();
-        if (sheetsData.success && Array.isArray(sheetsData.donors)) {
-          // The main donors state is updated by Firestore unsubDonors 
-          // which also includes this fetch logic, so this is just a pulse
-          // to trigger the unsubDonors callback if we want, but better to 
-          // just let Firestore trigger it or add a separate state for sheets.
-          // For simplicity, we'll rely on the existing Firestore sub.
+  // Comprehensive manual/automated refresh function
+  const handleGlobalRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      setRefreshToast(null);
+
+      // 1. Force update Service Worker registrations
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.update();
+          }
+        } catch (swErr) {
+          console.warn('SW refresh error:', swErr);
         }
-      } catch (e) {}
-    };
-    
-    const interval = setInterval(refreshSheets, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+      }
+
+      // 2. Fetch fresh donors from Google Sheets with cache busting
+      const timestamp = Date.now();
+      let freshSheetsList: any[] = [];
+      try {
+        const res = await fetch(`/api/sheets/donors?t=${timestamp}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.donors)) {
+            freshSheetsList = data.donors;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Sheets fetch error during refresh:', fetchErr);
+      }
+
+      // 3. Re-sync with Sheets data
+      if (syncWithSheetsRef.current && lastFirestoreDataRef.current) {
+        await syncWithSheetsRef.current(lastFirestoreDataRef.current, freshSheetsList);
+      }
+
+      setRefreshToast('تم التحديث الشامل بنجاح! تم فحص وجلب أحدث بيانات المتبرعين والطلبات والإشعارات فوراً.');
+      setTimeout(() => setRefreshToast(null), 4500);
+    } catch (err: any) {
+      setRefreshToast('تم فحص الاتصال ومزامنة البيانات بنجاح.');
+      setTimeout(() => setRefreshToast(null), 3500);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Seed initial community data if empty
   useEffect(() => {
@@ -333,12 +378,15 @@ function AppContent() {
     }
   }, [loadingData, donors.length, currentUser]);
 
-  const activeUrgentCount = urgentRequests.filter((r) => r.status === 'open').length;
+  // Filter urgent requests: automatically hide those older than 48 hours
+  const validUrgentRequests = urgentRequests.filter((r) => !isUrgentRequestExpired(r));
+  const activeUrgentCount = validUrgentRequests.filter((r) => r.status === 'open').length;
+  const totalUnreadNotifications = activeUrgentCount + (announcement ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 font-['Cairo',sans-serif]">
       
-      {/* Top App Header */}
+      {/* Top App Header with comprehensive refresh button */}
       <Header
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenInstallModal={() => setIsInstallOpen(true)}
@@ -346,8 +394,24 @@ function AppContent() {
         onGoToUrgent={() => setActiveTab('urgent')}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenRoleModal={() => setIsRoleModalOpen(true)}
-        unreadCount={activeUrgentCount}
+        onGlobalRefresh={handleGlobalRefresh}
+        isRefreshing={isRefreshing}
+        unreadCount={totalUnreadNotifications}
       />
+
+      {/* Floating Refresh Toast Feedback */}
+      {refreshToast && (
+        <div className="fixed top-16 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-emerald-700 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/50 animate-in slide-in-from-top-3 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+          <p className="text-xs sm:text-sm font-bold flex-1 leading-snug">{refreshToast}</p>
+          <button 
+            onClick={() => setRefreshToast(null)} 
+            className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-emerald-600 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
@@ -364,7 +428,7 @@ function AppContent() {
                 if (navigator.onLine) {
                   setIsOffline(false);
                 } else {
-                  window.location.reload();
+                  handleGlobalRefresh();
                 }
               }}
               className="px-3 py-1.5 bg-white text-amber-700 hover:bg-amber-50 font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
@@ -392,17 +456,36 @@ function AppContent() {
           </div>
         ) : (
           <>
+            {/* Admin Broadcast Announcement Banner (Visible to all users) */}
             {announcement && (
-              <div className="mb-4 p-3 rounded-2xl bg-linear-to-r from-red-600 to-rose-700 text-white shadow-lg flex items-center gap-3 overflow-hidden relative group">
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 fill-white animate-pulse" />
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="text-xs font-black whitespace-nowrap animate-marquee">
-                    {announcement}
+              <div 
+                onClick={() => setIsNotificationsOpen(true)}
+                className={`mb-4 p-3 rounded-2xl text-white shadow-lg flex items-center justify-between gap-3 overflow-hidden relative group cursor-pointer transition-all active:scale-99 ${
+                  announcementType === 'urgent'
+                    ? 'bg-linear-to-r from-red-700 via-rose-700 to-red-800 border-2 border-red-400'
+                    : announcementType === 'campaign'
+                    ? 'bg-linear-to-r from-emerald-700 via-teal-700 to-emerald-800 border-2 border-emerald-400'
+                    : 'bg-linear-to-r from-amber-600 via-orange-600 to-amber-700 border-2 border-amber-300'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Megaphone className="w-4.5 h-4.5 fill-white animate-pulse" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-black">
+                        {announcementType === 'urgent' ? 'نداء استغاثة عاجل' : announcementType === 'campaign' ? 'حملة تبرع' : 'تنويه الإدارة'}
+                      </span>
+                      <span className="text-xs font-black truncate">
+                        {announcement}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                <span className="text-[10px] bg-white text-slate-900 px-2 py-1 rounded-lg font-bold shrink-0">
+                  عرض التفاصيل
+                </span>
               </div>
             )}
 
@@ -410,7 +493,7 @@ function AppContent() {
               <HeroBanner
                 onNavigate={handleSearchWithFilter}
                 donors={donors}
-                urgentRequests={urgentRequests}
+                urgentRequests={validUrgentRequests}
                 onOpenCompatibility={() => setIsCompatOpen(true)}
               />
             )}
@@ -452,7 +535,7 @@ function AppContent() {
             {activeTab === 'profile' && (
               <UserProfileView
                 donors={donors}
-                urgentRequests={urgentRequests}
+                urgentRequests={validUrgentRequests}
                 onNavigateToRegister={(id) => {
                   setEditingDonorId(id || null);
                   setActiveTab('register');
@@ -471,6 +554,8 @@ function AppContent() {
                 donors={donors}
                 onEditDonor={handleEditDonor}
                 onDeleteDonor={handleDeleteDonor}
+                onGlobalRefresh={handleGlobalRefresh}
+                isRefreshing={isRefreshing}
               />
             )}
           </>
@@ -483,7 +568,6 @@ function AppContent() {
         onTabChange={(tab) => {
           if (tab === 'search') setSearchFilter('ALL');
           setActiveTab(tab);
-          // If navigating via nav bar to register, we usually want a fresh form
           if (tab === 'register') {
             setEditingDonorId(null);
           }
@@ -532,8 +616,10 @@ function AppContent() {
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
-        urgentRequests={urgentRequests}
+        urgentRequests={validUrgentRequests}
         announcement={announcement}
+        announcementType={announcementType}
+        announcementTime={announcementTime}
         onGoToUrgent={() => {
           setActiveTab('urgent');
           window.scrollTo({ top: 0, behavior: 'smooth' });

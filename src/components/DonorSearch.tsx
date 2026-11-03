@@ -129,8 +129,14 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
     }, 2000);
   };
 
-  // WhatsApp helper
+  const [whatsAppTargetDonor, setWhatsAppTargetDonor] = useState<Donor | null>(null);
+
+  // WhatsApp helper - opens confirmation dialog
   const handleWhatsApp = (donor: Donor) => {
+    setWhatsAppTargetDonor(donor);
+  };
+
+  const confirmWhatsAppNavigation = (donor: Donor) => {
     const cleanNumber = donor.phone.replace(/\D/g, '');
     const international = cleanNumber.startsWith('967') ? cleanNumber : `967${cleanNumber}`;
     const text = encodeURIComponent(
@@ -608,6 +614,69 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
                 }}
                 disabled={isDeleting}
                 className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Departure Confirmation Modal */}
+      {whatsAppTargetDonor && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setWhatsAppTargetDonor(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100 text-center font-['Cairo',sans-serif]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
+              <MessageCircle className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">هل تريد المغادرة إلى واتساب؟</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                أنت على وشك مغادرة التطبيق وفتح محادثة واتساب مع المتبرع:
+              </p>
+            </div>
+
+            <div className="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100 text-right space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-900">{whatsAppTargetDonor.fullName}</span>
+                <span className="text-[10px] bg-red-600 text-white font-black px-2 py-0.5 rounded-full">
+                  فصيلة {whatsAppTargetDonor.bloodType}
+                </span>
+              </div>
+              <div className="text-xs text-slate-600 font-bold flex items-center justify-between">
+                <span>رقم الهاتف:</span>
+                <span dir="ltr" className="font-mono text-emerald-800 font-extrabold">{whatsAppTargetDonor.phone}</span>
+              </div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                السكن: {whatsAppTargetDonor.residence || 'مديرية قعطبة'}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = whatsAppTargetDonor;
+                  setWhatsAppTargetDonor(null);
+                  confirmWhatsAppNavigation(target);
+                }}
+                className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>نعم، الذهاب للواتس</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWhatsAppTargetDonor(null)}
+                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
               >
                 إلغاء
               </button>

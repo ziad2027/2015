@@ -250,7 +250,7 @@ export const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
         {/* Footer info */}
         <div className="p-3 pt-2 text-center bg-slate-50 rounded-2xl border border-slate-100">
           <p className="text-[10px] text-slate-500 font-bold">
-            رمز PIN السرّي الافتراضي للمسؤول: <span className="font-mono text-amber-700 font-black" dir="ltr">635215</span>
+            وضع المسؤول محمي برمز PIN سري مخصص لإدارة المبادرة وتنسيق حالات التبرع
           </p>
         </div>
       </div>

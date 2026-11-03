@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: ☕ إعداد بيئة جافا (Set up Java 21)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -54,43 +54,20 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
           cd ..
 
-      - name: 🗜️ تجهيز الحزمة المضغوطة (ZIP) المحتوية على ملف APK
+      - name: 📋 تجهيز وتسمية ملف APK
         run: |
-          mkdir -p package_to_zip
-          
-          # نسخ ملف الـ APK الحقيقي بالاسم المطلوب
-          cp android/app/build/outputs/apk/debug/app-debug.apk package_to_zip/Qatra_Dam.apk
-          
-          # إضافة ملف نصي توضيحي مع الملف
-          cat << 'EOF' > package_to_zip/تعليمات_التثبيت.txt
-          =============================================
-          تطبيق قطرة دم تنقذ حياة إنسان - مديرية قعطبة
-          =============================================
-          
-          خطوات تثبيت التطبيق على هاتفك الأندرويد:
-          1. ستجد ملف التطبيق بجانب هذا الملف باسم: (Qatra_Dam.apk).
-          2. اضغط على ملف Qatra_Dam.apk.
-          3. إذا طلب هاتفك الإذن لتثبيت التطبيقات من هذا المصدر، اضغط "الإعدادات" ثم فعّل "السماح بتثبيت التطبيقات غير المعروفة".
-          4. اضغط "تثبيت" (Install) وسيتم تثبيت التطبيق على هاتفك بنجاح.
-          EOF
-          
-          # إنشاء الأرشيف المضغوط ZIP
-          cd package_to_zip
-          zip -r ../Qatra_Dam_Package.zip Qatra_Dam.apk تعليمات_التثبيت.txt
-          cd ..
-          
-          echo "تم إنشاء الملف المضغوط بنجاح:"
-          ls -lh Qatra_Dam_Package.zip
+          mkdir -p release_files
+          cp android/app/build/outputs/apk/debug/app-debug.apk release_files/Qatra_Dam.apk
 
-      - name: 🚀 رفع الملف المضغوط (ZIP) كـ Artifact للتحميل
+      - name: 🚀 رفع ملف Qatra_Dam.apk كـ Artifact للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Qatra_Dam_Android_App
-          path: Qatra_Dam_Package.zip
+          name: Qatra_Dam_APK
+          path: release_files/Qatra_Dam.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: 🌟 نشر الحزمة المضغوطة وملف APK في Releases
+      - name: 🌟 نشر ملف APK في قسم Releases
         uses: softprops/action-gh-release@v2
         continue-on-error: true
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
@@ -99,13 +76,12 @@ jobs:
           name: "تطبيق قطرة دم - قعطبة (Qatra_Dam.apk)"
           body: |
             ### 📱 تطبيق قطرة دم تنقذ حياة إنسان - مديرية قعطبة
-            تم تجهيز الحزمة المضغوطة:
-            - الملف المضغوط: `Qatra_Dam_Package.zip` (يحتوي بداخله على `Qatra_Dam.apk`).
-            - أو يمكنك تحميل ملف الـ APK مباشرة: `Qatra_Dam.apk`.
+            تم بناء ملف التطبيق بنجاح:
+            - رابط التحميل المباشر: `Qatra_Dam.apk`
           draft: false
           prerelease: false
           files: |
-            Qatra_Dam_Package.zip
-            package_to_zip/Qatra_Dam.apk
+            release_files/Qatra_Dam.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
