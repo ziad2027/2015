@@ -11,7 +11,9 @@ import {
   LogIn,
   FileSpreadsheet,
   Trash2,
-  Calendar
+  Calendar,
+  Plus,
+  PlusCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +23,7 @@ import { saveDonorProfile, checkPhoneExists } from '../services/donorService';
 import { sanitizePhone } from '../services/phoneVerificationService';
 import { YemenPhoneInput } from './YemenPhoneInput';
 import { syncDonorToGoogleSheets, GOOGLE_SHEETS_CONFIG } from '../services/googleSheetsService';
+import { subscribeToLocations, saveLocation, seedInitialLocations } from '../services/locationService';
 
 interface DonorRegistrationProps {
   onSuccessNavigate: () => void;
@@ -72,6 +75,36 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+
+  // Dynamic Locations State from Firestore
+  const [locationsList, setLocationsList] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Seed initial locations if needed (one-time check)
+    seedInitialLocations();
+
+    const unsub = subscribeToLocations((locs: any[]) => {
+      setLocationsList(locs.map(l => l.name));
+    });
+    return () => unsub();
+  }, []);
+
+  const [newLocationInput, setNewLocationInput] = useState('');
+  const [showLocationAddInput, setShowLocationAddInput] = useState(false);
+
+  const handleAddCustomLocation = async () => {
+    if (!newLocationInput.trim()) return;
+    const clean = newLocationInput.trim();
+    
+    try {
+      await saveLocation(clean);
+      setResidence(clean);
+      setNewLocationInput('');
+      setShowLocationAddInput(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Sync isCreatingNew state with editingDonorId
   useEffect(() => {
@@ -144,6 +177,21 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
 
     if (!canEdit && existingDonor && !isCreatingNew) {
       setErrorMessage('عذراً، لا تملك صلاحية تعديل بيانات هذا المتبرع. يُسمح لكل شخص بتعديل بياناته فقط.');
+      return;
+    }
+
+    // Strict duplicate phone validation
+    const sanitizedPhone = cleanPhone.slice(-9);
+    const currentEditingId = (!isCreatingNew && existingDonor) ? existingDonor.id : null;
+
+    const duplicateDonor = donors.find(d => {
+      if (currentEditingId && d.id === currentEditingId) return false;
+      const dClean = d.phone.replace(/\D/g, '').slice(-9);
+      return dClean.length >= 7 && dClean === sanitizedPhone;
+    });
+
+    if (duplicateDonor && !isAdmin) {
+      setErrorMessage(`رقم الهاتف (${cleanPhone}) مسجل بالفعل لمتبرع آخر باسم (${duplicateDonor.fullName}). يُمنع تكرار تسجيل أرقام الهواتف لضمان مصداقية السجل الخيري.`);
       return;
     }
 
@@ -278,7 +326,7 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
-              {(!isCreatingNew && existingDonor) ? 'تعديل بيانات المتبرع' : 'التسجيل في سجل المتبرعين بالدم'}
+              {(!isCreatingNew && existingDonor) ? 'تعديل بيانات المتبرع' : 'التسجيل في بنك الدم'}
             </h2>
             <p className="text-xs sm:text-sm text-red-100 mt-0.5">
               مديرية قعطبة وضواحيها • سجل موثوق ومحمي للمتبرعين
@@ -431,9 +479,46 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
 
           {/* Current Residence */}
           <div>
-            <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
-              السكن الحالي (المنطقة / القرية) <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800">
+                السكن الحالي (المنطقة / القرية) <span className="text-red-500">*</span>
+              </label>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowLocationAddInput(!showLocationAddInput)}
+                  className="text-[11px] font-black text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-amber-700" />
+                  <span>إضافة منطقة (وضع المسؤول)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Admin Add Location Bar */}
+            {isAdmin && showLocationAddInput && (
+              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl space-y-2 animate-in fade-in">
+                <span className="text-xs font-black text-amber-900 block">إضافة منطقة جديدة لقائمة قعطبة:</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newLocationInput}
+                    onChange={(e) => setNewLocationInput(e.target.value)}
+                    placeholder="اسم المنطقة (مثال: قعطبة - حارة السلام)"
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-xs font-bold outline-hidden focus:ring-2 focus:ring-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomLocation}
+                    disabled={!newLocationInput.trim()}
+                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    حفظ المنطقة
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="relative mb-2">
               <input
                 type="text"
@@ -448,10 +533,10 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
 
             {/* Quick Location Pills */}
             <div className="flex flex-wrap gap-1.5">
-              {COMMON_LOCATIONS.map((loc) => (
+              {locationsList.map((loc) => (
                 <button
-                  type="button"
                   key={loc}
+                  type="button"
                   onClick={() => setResidence(loc.replace(' (تحديد يدوي)', ''))}
                   className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
                     residence === loc
@@ -463,6 +548,11 @@ export const DonorRegistration: React.FC<DonorRegistrationProps> = ({
                 </button>
               ))}
             </div>
+            {isAdmin && (
+              <p className="text-[10px] text-slate-400 mt-2">
+                * يمكنك تعديل أو حذف هذه المناطق نهائياً من <span className="font-bold text-amber-600">لوحة تحكم المسؤول</span>.
+              </p>
+            )}
           </div>
 
           {/* Optional Health Notes */}

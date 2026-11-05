@@ -18,15 +18,22 @@ import {
   MapPin,
   Megaphone,
   Bell,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  X,
+  Users,
+  UserPlus
 } from 'lucide-react';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { importRawDonors, pushAllDonorsToSheets, GOOGLE_SHEETS_CONFIG } from '../services/googleSheetsService';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
-import { Donor, BloodType, BLOOD_TYPES } from '../types';
+import { Donor, BloodType, BLOOD_TYPES, Hospital } from '../types';
 import { BloodDonationEducationalInfo } from './BloodDonationEducationalInfo';
+import { subscribeToHospitals, saveHospital, deleteHospital, seedHospitals } from '../services/hospitalService';
+import { subscribeToLocations, saveLocation, deleteLocation } from '../services/locationService';
+import { Hospital as HospitalIcon, MessageSquare } from 'lucide-react';
+import AdminChatManager from './AdminChatManager';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -64,6 +71,100 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [adminDeleteError, setAdminDeleteError] = useState<string | null>(null);
   const [showDonorsSection, setShowDonorsSection] = useState(true);
 
+  // Hospital management states
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [showHospitalsSection, setShowHospitalsSection] = useState(false);
+  const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
+  const [isHospitalFormOpen, setIsHospitalFormOpen] = useState(false);
+  const [hospitalForm, setHospitalForm] = useState<Omit<Hospital, 'id'>>({
+    name: '',
+    type: '',
+    address: '',
+    phone: '',
+    services: ''
+  });
+  const [hospitalLoading, setHospitalLoading] = useState(false);
+  const [showChatManager, setShowChatManager] = useState(false);
+
+  // Subscribe to hospitals
+  React.useEffect(() => {
+    const unsub = subscribeToHospitals((data) => {
+      setHospitals(data);
+    });
+    return () => unsub();
+  }, []);
+
+  // User Accounts Stats State
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
+  const [todaySignupsCount, setTodaySignupsCount] = useState<number>(0);
+  const [adminsCount, setAdminsCount] = useState<number>(0);
+  const [adminsList, setAdminsList] = useState<any[]>([]);
+  const [allUsersList, setAllUsersList] = useState<any[]>([]);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [showUsersSection, setShowUsersSection] = useState(false);
+
+  // Locations management states
+  const [locations, setLocations] = useState<any[]>([]);
+  const [showLocationsSection, setShowLocationsSection] = useState(false);
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [locationNameInput, setLocationLocationNameInput] = useState('');
+
+  const fetchUserStats = async () => {
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const total = usersSnap.size;
+      setTotalUsersCount(total);
+
+      // Count signups created today
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      let todayCount = 0;
+      const admins: any[] = [];
+      const allUsers: any[] = [];
+
+      usersSnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        const userWithId = { id: docSnap.id, ...data };
+        allUsers.push(userWithId);
+        
+        // Admin check
+        if (data.role === 'admin' || data.email === 'ziadalsyyadi@gmail.com') {
+          admins.push(userWithId);
+        }
+
+        let createdTime: number | null = null;
+        if (data.createdAt?.toDate) {
+          createdTime = data.createdAt.toDate().getTime();
+        } else if (data.createdAt) {
+          createdTime = new Date(data.createdAt).getTime();
+        }
+        if (createdTime && createdTime >= startOfDay) {
+          todayCount++;
+        }
+      });
+
+      setTodaySignupsCount(todayCount);
+      setAdminsCount(admins.length);
+      setAdminsList(admins);
+      setAllUsersList(allUsers);
+    } catch (e) {
+      console.warn('Could not fetch user stats:', e);
+    }
+  };
+
+  // Subscribe to locations
+  React.useEffect(() => {
+    const unsub = subscribeToLocations((data: any[]) => {
+      setLocations(data);
+    });
+    return () => unsub();
+  }, []);
+
+  React.useEffect(() => {
+    fetchUserStats();
+  }, [donors.length]);
+
   // Filtered donors in admin panel
   const filteredDonors = React.useMemo(() => {
     return donors.filter((d) => {
@@ -100,7 +201,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handlePinLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setPinError('');
-    if (pinInput.trim() === '635215' || userProfile?.role === 'admin' || currentUser?.email === 'ziadalsyyadi@gmail.com') {
+    if (pinInput.trim() === '635215' || userProfile?.role === 'admin' || currentUser?.email === 'ziadalsyyadi@gmail.com' || currentUser?.email === 'user_967773633918_v1@qataba-blood.app') {
       switchActiveRole('admin');
     } else {
       setPinError('رمز PIN السرّي غير صحيح. يرجى إدخال الرمز المعتمد لإدارة التطبيق.');
@@ -153,7 +254,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Access Guard check
-  if (activeRole !== 'admin' && userProfile?.role !== 'admin' && currentUser?.email !== 'ziadalsyyadi@gmail.com') {
+  if (activeRole !== 'admin' && userProfile?.role !== 'admin' && currentUser?.email !== 'ziadalsyyadi@gmail.com' && currentUser?.email !== 'user_967773633918_v1@qataba-blood.app') {
     return (
       <div className="max-w-md mx-auto my-8 p-6 rounded-3xl bg-white border border-slate-200 shadow-xl space-y-5 text-right">
         <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
@@ -356,6 +457,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reader.readAsText(file);
   };
 
+  const handleCleanupUsers = async () => {
+    if (!window.confirm('هل أنت متأكد من حذف كافة المستخدمين التجريبيين؟ سيتم الإبقاء على حسابك وحسابات المسؤولين الموثقة فقط.')) return;
+    setIsCleaningUp(true);
+    setResult(null);
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      let deletedCount = 0;
+      for (const userDoc of usersSnap.docs) {
+        const data = userDoc.data();
+        const email = data.email || '';
+        
+        // Protection: Don't delete main admin or anyone with admin role or current user
+        if (email === 'ziadalsyyadi@gmail.com' || email === 'user_967773633918_v1@qataba-blood.app' || data.role === 'admin' || userDoc.id === currentUser?.uid) {
+          continue;
+        }
+        
+        await deleteDoc(doc(db, 'users', userDoc.id));
+        deletedCount++;
+      }
+      setResult({ success: true, message: `تم تنظيف قاعدة البيانات وحذف ${deletedCount} مستخدم تجريبي بنجاح.` });
+      fetchUserStats(); 
+    } catch (e: any) {
+      setResult({ success: false, message: `فشل التنظيف: ${e.message}` });
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Hidden native file input */}
@@ -414,6 +543,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ArrowRight className="w-4 h-4" />
             <span>الرئيسية</span>
           </button>
+        </div>
+      </div>
+
+      {showChatManager && (
+        <div className="fixed inset-0 z-50 bg-white lg:bg-black/50 lg:backdrop-blur-sm lg:p-4 flex items-center justify-center animate-in fade-in zoom-in duration-200">
+          <div className="w-full h-full lg:max-w-6xl lg:h-[90vh] relative">
+            <button 
+              onClick={() => setShowChatManager(false)}
+              className="absolute top-4 left-4 z-50 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-6 h-6 text-gray-900" />
+            </button>
+            <AdminChatManager />
+          </div>
+        </div>
+      )}
+
+      {/* Live User Statistics Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="p-4 rounded-3xl bg-linear-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-200 flex flex-col items-center justify-center text-center space-y-1">
+          <div className="p-2 rounded-2xl bg-white/20 backdrop-blur-xs">
+            <Users className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xl font-black">{totalUsersCount}</div>
+          <div className="text-[10px] font-extrabold text-amber-100">إجمالي مستخدمي التطبيق</div>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-200 flex flex-col items-center justify-center text-center space-y-1">
+          <div className="p-2 rounded-2xl bg-white/20 backdrop-blur-xs">
+            <UserPlus className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xl font-black">+{todaySignupsCount}</div>
+          <div className="text-[10px] font-extrabold text-emerald-100">المنضمين الجدد اليوم</div>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-linear-to-br from-red-600 to-red-700 text-white shadow-md shadow-red-200 flex flex-col items-center justify-center text-center space-y-1">
+          <div className="p-2 rounded-2xl bg-white/20 backdrop-blur-xs">
+            <Database className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xl font-black">{donors.length}</div>
+          <div className="text-[10px] font-extrabold text-red-100">إجمالي المتبرعين المسجلين</div>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-linear-to-br from-blue-600 to-blue-700 text-white shadow-md shadow-blue-200 flex flex-col items-center justify-center text-center space-y-1">
+          <div className="p-2 rounded-2xl bg-white/20 backdrop-blur-xs">
+            <ShieldCheck className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xl font-black">{adminsCount}</div>
+          <div className="text-[10px] font-extrabold text-blue-100">المسؤولين (Admins)</div>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-linear-to-br from-slate-800 to-slate-900 text-white shadow-md shadow-slate-200 flex flex-col items-center justify-center text-center space-y-1">
+          <div className="p-2 rounded-2xl bg-white/20 backdrop-blur-xs">
+            <HospitalIcon className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xl font-black">{hospitals.length}</div>
+          <div className="text-[10px] font-extrabold text-slate-300">المستشفيات والمراكز</div>
         </div>
       </div>
 
@@ -622,6 +808,169 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Message Center Card */}
+        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col items-center justify-center gap-4 text-center">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 shadow-inner">
+            <MessageSquare className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-base font-black text-slate-900">مركز الرسائل والدعم</h2>
+            <p className="text-xs text-slate-500 mt-1 max-w-[200px]">الرد على استفسارات المستخدمين وحل مشكلاتهم عبر المحادثة المباشرة</p>
+          </div>
+          <button
+            onClick={() => setShowChatManager(true)}
+            className="w-full py-3 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-md shadow-red-100 transition-all flex items-center justify-center gap-2 active:scale-98"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span>فتح مركز الرسائل</span>
+          </button>
+        </div>
+
+        {/* Cleanup & Admin Management Card */}
+        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 text-slate-900">
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <h2 className="text-sm font-black">إدارة النظام والتنظيف</h2>
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            يمكنك تنظيف قاعدة البيانات من الحسابات التجريبية أو إدارة صلاحيات المسؤولين. سيتم الحفاظ على حسابك الأساسي فقط.
+          </p>
+
+          <button
+            onClick={handleCleanupUsers}
+            disabled={isCleaningUp}
+            className="w-full py-3 px-4 rounded-2xl bg-slate-900 hover:bg-black text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+          >
+            {isCleaningUp ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4 text-red-400" />
+            )}
+            <span>حذف كافة المستخدمين التجريبيين (تنظيف)</span>
+          </button>
+
+          <div className="pt-3 border-t border-slate-100">
+             <h3 className="text-[10px] font-black text-slate-400 mb-2 uppercase">المسؤولون الحاليون ({adminsCount}):</h3>
+             <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+               {adminsList.map(admin => (
+                 <div key={admin.id} className="flex items-center justify-between p-2 rounded-lg bg-blue-50/50 border border-blue-100/50">
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-slate-800">{admin.displayName || admin.fullName || 'بدون اسم'}</span>
+                      <span className="text-[9px] text-slate-500 font-mono truncate max-w-[120px]">{admin.email || admin.phone || admin.id}</span>
+                    </div>
+                    <span className="text-[8px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">مسؤول</span>
+                 </div>
+               ))}
+             </div>
+          </div>
+        </div>
+
+        {/* Users Management Card */}
+        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900">
+              <Users className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-sm font-black">إدارة مستخدمي التطبيق</h2>
+            </div>
+            <button 
+              onClick={() => setShowUsersSection(!showUsersSection)}
+              className="text-[10px] font-bold text-indigo-600 hover:underline"
+            >
+              {showUsersSection ? 'إخفاء القائمة' : 'عرض كافة المستخدمين'}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed font-medium">عرض أسماء وبيانات كافة المسجلين في التطبيق.</p>
+          
+          {showUsersSection && (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 pt-2 border-t border-slate-50">
+              {allUsersList.map(u => (
+                <div key={u.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-slate-900">{u.displayName || u.fullName || 'مستخدم غير معروف'}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{u.phone || u.email || 'بدون هاتف'}</span>
+                  </div>
+                  {u.role === 'admin' && (
+                    <span className="text-[8px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">مسؤول</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Locations Management Card */}
+        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-900">
+              <MapPin className="w-5 h-5 text-rose-600" />
+              <h2 className="text-sm font-black">إدارة المناطق السكنية</h2>
+            </div>
+            <button 
+              onClick={() => setShowLocationsSection(!showLocationsSection)}
+              className="text-[10px] font-bold text-rose-600 hover:underline"
+            >
+              {showLocationsSection ? 'إخفاء المناطق' : 'إدارة قائمة المناطق'}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed font-medium">تعديل أو حذف المناطق التي تظهر للمتبرعين عند التسجيل.</p>
+
+          {showLocationsSection && (
+            <div className="space-y-4 pt-2 border-t border-slate-50">
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={locationNameInput}
+                  onChange={(e) => setLocationLocationNameInput(e.target.value)}
+                  placeholder="إضافة منطقة جديدة..."
+                  className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold outline-hidden focus:ring-2 focus:ring-rose-500"
+                />
+                <button 
+                  onClick={async () => {
+                    if (!locationNameInput.trim()) return;
+                    await saveLocation(locationNameInput, editingLocationId || undefined);
+                    setLocationLocationNameInput('');
+                    setEditingLocationId(null);
+                    setResult({ success: true, message: 'تم حفظ المنطقة بنجاح! ✓' });
+                  }}
+                  className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-black shadow-md shadow-rose-100"
+                >
+                  {editingLocationId ? 'تعديل' : 'إضافة'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 max-h-[250px] overflow-y-auto pr-1">
+                {locations.map(loc => (
+                  <div key={loc.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{loc.name}</span>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setEditingLocationId(loc.id);
+                          setLocationLocationNameInput(loc.name);
+                        }}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (window.confirm(`هل أنت متأكد من حذف منطقة "${loc.name}"؟`)) {
+                            await deleteLocation(loc.id);
+                            setResult({ success: true, message: 'تم حذف المنطقة بنجاح.' });
+                          }
+                        }}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* System Stats & Detailed Management */}
@@ -753,9 +1102,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div>
                 <h3 className="text-sm font-black text-slate-900">إدارة وتعديل وحذف أي متبرع</h3>
                 <p className="text-[11px] text-slate-500 font-medium">
-                  بصفتك مسؤول التطبيق، يمكنك تعديل أي متبرع أو حذفه نهائياً
+                  بصفتك مسؤول التطبيق، يمكنك إضافة، تعديل أو حذف أي متبرع نهائياً
                 </p>
               </div>
+
+              <button 
+                onClick={() => onEditDonor?.('')}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black shadow-md shadow-red-200 transition-all flex items-center gap-2 active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة متبرع جديد</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
@@ -883,6 +1240,229 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 لا يوجد متبرعون يطابقون معايير البحث الحالية
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Hospital Management Section */}
+      <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2 text-slate-900">
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <HospitalIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black">إدارة دليل المستشفيات</h3>
+              <p className="text-[11px] text-slate-500 font-medium">إضافة وتعديل بيانات المستشفيات والمختبرات في الدليل</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {hospitals.length === 0 && (
+              <button 
+                onClick={async () => {
+                  setLoading(true);
+                  setResult(null);
+                  try {
+                    await seedHospitals();
+                    setResult({ success: true, message: 'تم إدراج البيانات الأولية للمستشفيات بنجاح! ✓' });
+                  } catch (err: any) {
+                    console.error('Seed hospitals error:', err);
+                    setResult({ success: false, message: 'فشل تحميل البيانات الافتراضية. تأكد من صلاحيات المسؤول.' });
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black transition-all"
+              >
+                تحميل البيانات الافتراضية
+              </button>
+            )}
+            <button 
+              onClick={() => {
+                setEditingHospital(null);
+                setHospitalForm({ name: '', type: '', address: '', phone: '', services: '' });
+                setIsHospitalFormOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-200 transition-all flex items-center gap-2 active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة مستشفى جديد</span>
+            </button>
+            <button 
+              type="button"
+              onClick={() => setShowHospitalsSection(prev => !prev)}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black shadow-xs transition-all"
+            >
+              {showHospitalsSection ? 'إخفاء الدليل' : 'عرض الدليل للتحكم'}
+            </button>
+          </div>
+        </div>
+
+        {showHospitalsSection && (
+          <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+            {hospitals.length > 0 ? (
+              hospitals.map((h) => (
+                <div
+                  key={h.id}
+                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-all flex flex-wrap items-center justify-between gap-3 text-right"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center text-sm shrink-0 shadow-sm shadow-emerald-200">
+                      <HospitalIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">{h.name}</h4>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-0.5">
+                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{h.type}</span>
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-slate-400" />
+                          {h.phone}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingHospital(h);
+                        setHospitalForm({
+                          name: h.name,
+                          type: h.type,
+                          address: h.address,
+                          phone: h.phone,
+                          services: h.services
+                        });
+                        setIsHospitalFormOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>تعديل</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`هل أنت متأكد من حذف ${h.name} من الدليل؟`)) {
+                          await deleteHospital(h.id);
+                          setResult({ success: true, message: 'تم حذف المستشفى بنجاح' });
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-black transition-all flex items-center gap-1.5 active:scale-95"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>حذف</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-500 text-xs">
+                دليل المستشفيات فارغ حالياً. يمكنك إضافة مستشفيات يدوياً أو تحميل البيانات الافتراضية.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Hospital Form Modal */}
+      {isHospitalFormOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 text-right">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-black text-slate-900">
+                {editingHospital ? 'تعديل بيانات مستشفى' : 'إضافة مستشفى جديد'}
+              </h3>
+              <button onClick={() => setIsHospitalFormOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setHospitalLoading(true);
+                setResult(null);
+                try {
+                  await saveHospital(hospitalForm, editingHospital?.id);
+                  setResult({ success: true, message: editingHospital ? 'تم تحديث بيانات المستشفى بنجاح! ✓' : 'تم إضافة المستشفى الجديد بنجاح! ✓' });
+                  setIsHospitalFormOpen(false);
+                } catch (err: any) {
+                  console.error('Hospital save error:', err);
+                  setResult({ 
+                    success: false, 
+                    message: `فشل حفظ البيانات: ${err.message?.includes('Permission denied') ? 'عذراً، لا تمتلك صلاحيات كافية (Admin) للقيام بهذا الإجراء.' : 'حدث خطأ تقني أثناء الحفظ.'}` 
+                  });
+                } finally {
+                  setHospitalLoading(false);
+                }
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">اسم المستشفى / المختبر:</label>
+                <input 
+                  type="text" 
+                  value={hospitalForm.name}
+                  onChange={(e) => setHospitalForm({...hospitalForm, name: e.target.value})}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-hidden"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">النوع (حكومي، خاص، مختبر...):</label>
+                <input 
+                  type="text" 
+                  value={hospitalForm.type}
+                  onChange={(e) => setHospitalForm({...hospitalForm, type: e.target.value})}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-hidden"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">العنوان / الموقع:</label>
+                <input 
+                  type="text" 
+                  value={hospitalForm.address}
+                  onChange={(e) => setHospitalForm({...hospitalForm, address: e.target.value})}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-hidden"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">رقم الهاتف:</label>
+                <input 
+                  type="text" 
+                  value={hospitalForm.phone}
+                  onChange={(e) => setHospitalForm({...hospitalForm, phone: e.target.value})}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-hidden font-mono"
+                  dir="ltr"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">الخدمات المتوفرة:</label>
+                <textarea 
+                  value={hospitalForm.services}
+                  onChange={(e) => setHospitalForm({...hospitalForm, services: e.target.value})}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-hidden"
+                  rows={3}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={hospitalLoading}
+                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                {hospitalLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                <span>{editingHospital ? 'تحديث البيانات' : 'إضافة إلى الدليل'}</span>
+              </button>
+            </form>
           </div>
         </div>
       )}

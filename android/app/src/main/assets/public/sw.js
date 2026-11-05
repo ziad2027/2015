@@ -99,7 +99,7 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "revision": "57ba7c3d61171cc3f05b92c877b117ca"
   }, {
     "url": "index.html",
-    "revision": "9aaac72ae0be4890335aeaf2b3e14228"
+    "revision": "8ed44a57f22fe73b1ad5db4963f9e9ae"
   }, {
     "url": "icon.svg",
     "revision": "d15cd26172a59d5a57aca17e2e55ef36"
@@ -110,16 +110,16 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "url": "assets/rolldown-runtime-la_ZsWYt.js",
     "revision": null
   }, {
-    "url": "assets/react-vendor-L-AHi2Wl.js",
+    "url": "assets/react-vendor-CidI60Xl.js",
     "revision": null
   }, {
-    "url": "assets/index-jaD7Ua9a.js",
+    "url": "assets/index-C-QMEFL-.css",
     "revision": null
   }, {
-    "url": "assets/index-ivj3QWo9.css",
+    "url": "assets/index-B-S0iN15.js",
     "revision": null
   }, {
-    "url": "assets/icons-vendor-6rZTieys.js",
+    "url": "assets/icons-vendor-Cooi5xIE.js",
     "revision": null
   }, {
     "url": "assets/firebase-vendor-BrgdeQ0n.js",
@@ -132,6 +132,15 @@ define(['./workbox-b1bafff1'], (function (workbox) { 'use strict';
     "revision": null
   }, {
     "url": "assets/images/app_logo_icon.jpg",
+    "revision": null
+  }, {
+    "url": "assets/aistudio/IMG-20251014-WA0021_1__70d6223c.jpg",
+    "revision": null
+  }, {
+    "url": "assets/aistudio/1793729827076_28d1039d.jpg",
+    "revision": null
+  }, {
+    "url": "assets/aistudio/1793729364931_f9b871ba.jpg",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",

@@ -63,9 +63,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userDocRef = doc(db, 'users', user.uid);
     try {
       const snap = await getDoc(userDocRef);
+      const isAdminEmail = user.email === 'ziadalsyyadi@gmail.com' || user.email === 'user_967773633918_v1@qataba-blood.app';
+
       if (snap.exists()) {
         const data = snap.data();
-        const isAdminEmail = user.email === 'ziadalsyyadi@gmail.com';
+        
+        // Force admin role in Firestore if it's the master admin email but role is different
+        if (isAdminEmail && data.role !== 'admin') {
+          await updateDoc(userDocRef, { role: 'admin' });
+        }
+
         setUserProfile({
           uid: user.uid,
           displayName: data.displayName || user.displayName || 'مستخدم',
@@ -79,7 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const phoneMatch = user.email?.match(/user_967(\d+)_/);
         const legacyMatch = user.email?.match(/user_(\d+)@/);
         const extractedPhone = phoneMatch ? phoneMatch[1] : (legacyMatch ? legacyMatch[1] : '');
-        const isAdminEmail = user.email === 'ziadalsyyadi@gmail.com';
 
         const newProfile: UserProfile = {
           uid: user.uid,
@@ -99,9 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Update active role based on user profile
-      const isAdminEmail = user.email === 'ziadalsyyadi@gmail.com';
-      const snapData = snap.data();
-      const actualRole = isAdminEmail ? 'admin' : (snapData?.role || 'user');
+      const actualRole = isAdminEmail ? 'admin' : (snap.exists() ? (snap.data()?.role || 'user') : 'user');
       setActiveRole(actualRole);
 
     } catch (err) {

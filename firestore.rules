@@ -26,7 +26,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'ziadalsyyadi@gmail.com' ||
+        (request.auth.token.email == 'ziadalsyyadi@gmail.com' && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == 'user_967773633918_v1@qataba-blood.app') ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
@@ -68,7 +69,7 @@ service cloud.firestore {
 
     // Donors Collection
     match /donors/{donorId} {
-      allow get, list: if true;
+      allow get, list: if isSignedIn();
 
       allow create: if isSignedIn() &&
         isValidId(donorId) &&
@@ -90,7 +91,7 @@ service cloud.firestore {
 
     // Urgent Requests Collection
     match /urgent_requests/{requestId} {
-      allow get, list: if true;
+      allow get, list: if isSignedIn();
 
       allow create: if isSignedIn() &&
         isValidId(requestId) &&
@@ -117,12 +118,14 @@ service cloud.firestore {
 
       allow create: if isSignedIn() &&
         request.auth.uid == userId &&
-        (incoming().role == 'user' || (request.auth.token.email == 'ziadalsyyadi@gmail.com' && incoming().role == 'admin')) &&
+        (incoming().role == 'user' || 
+         ((request.auth.token.email == 'ziadalsyyadi@gmail.com' || request.auth.token.email == 'user_967773633918_v1@qataba-blood.app') && incoming().role == 'admin')) &&
         incoming().displayName is string && incoming().displayName.size() <= 100;
 
       allow update: if isSignedIn() &&
         request.auth.uid == userId &&
-        (incoming().role == existing().role || (request.auth.token.email == 'ziadalsyyadi@gmail.com' && incoming().role in ['user', 'admin'])) &&
+        (incoming().role == existing().role || 
+         ((request.auth.token.email == 'ziadalsyyadi@gmail.com' || request.auth.token.email == 'user_967773633918_v1@qataba-blood.app') && incoming().role in ['user', 'admin'])) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'phone', 'phoneVerified', 'role', 'updatedAt']);
 
       allow delete: if isAdmin();
@@ -130,7 +133,7 @@ service cloud.firestore {
 
     // Phone Auth Records (direct phone login & reset tracking)
     match /phone_auth/{phone} {
-      allow get: if true;
+      allow get: if isSignedIn();
       allow list: if isAdmin();
       allow create, update: if isValidId(phone) &&
         incoming().keys().hasAll(['phone', 'version', 'userId']) &&
@@ -142,9 +145,33 @@ service cloud.firestore {
 
     // App Settings
     match /settings/{settingId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if isSignedIn();
       allow write: if (isAdmin() || (isSignedIn() && request.auth.token.email == 'ziadalsyyadi@gmail.com')) && isValidId(settingId);
+    }
+
+    // Hospitals Directory
+    match /hospitals/{hospitalId} {
+      allow get, list: if isSignedIn();
+      allow write: if isAdmin() && isValidId(hospitalId);
+    }
+
+    // Locations / Regions
+    match /locations/{locationId} {
+      allow get, list: if isSignedIn();
+      allow write: if isAdmin() && isValidId(locationId);
+    }
+
+    // Support Chat Conversations
+    match /conversations/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // Chat Messages Subcollection
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+        allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(messageId);
+        allow update, delete: if isAdmin();
+      }
     }
   }
 }

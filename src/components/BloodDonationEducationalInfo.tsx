@@ -5,7 +5,7 @@ export const BloodDonationEducationalInfo: React.FC = () => {
   const posterImagePath = '/assets/images/blood_benefits_poster.jpg';
 
   return (
-    <div className="space-y-6 text-right pb-28 sm:pb-36 font-['Cairo',sans-serif] max-w-2xl mx-auto select-none">
+    <div className="w-full max-w-4xl mx-auto space-y-4 text-right font-['Cairo',sans-serif] select-none">
       
       {/* 1. Main Poster Image Container - Static & Fixed at the top */}
       <div className="bg-white rounded-3xl p-2 sm:p-3 border border-slate-200/90 shadow-sm relative overflow-hidden">
@@ -69,7 +69,7 @@ export const BloodDonationEducationalInfo: React.FC = () => {
               شكراً لكل بطل ومتبرع يبادر لإنقاذ الأرواح
             </p>
             <p className="text-xs text-red-100/90 font-medium">
-              تطبيق سجل المتبرعين بالدم • مديرية قعطبة - محافظة الضالع
+              تطبيق بنك الدم في مديرية قعطبة - محافظة الضالع
             </p>
           </div>
         </div>

@@ -42,6 +42,19 @@
           "description": "Date of donation or last donation",
           "maxLength": 40
         },
+        "donationHistory": {
+          "type": "array",
+          "description": "List of historical blood donations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "date": { "type": "string" },
+              "notes": { "type": "string", "maxLength": 200 }
+            },
+            "required": ["id", "date"]
+          }
+        },
         "isAvailable": {
           "type": "boolean",
           "description": "Whether donor is ready and eligible to donate now"
@@ -213,6 +226,69 @@
         }
       },
       "required": ["phone", "version", "userId"]
+    },
+    "Hospital": {
+      "title": "Hospital",
+      "description": "Medical facility in the directory",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "type": {
+          "type": "string",
+          "description": "Facility type (e.g. Government, Private, Lab)",
+          "maxLength": 100
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "services": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "type", "address", "phone"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Metadata for a support chat between user and admin",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["new", "read", "replied", "closed"] },
+        "unreadCountByAdmin": { "type": "number" },
+        "unreadCountByUser": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userDisplayName", "status", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A single message in a support conversation",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string", "maxLength": 2000 },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "isAdmin", "createdAt"]
     }
   },
   "firestore": {
@@ -245,6 +321,24 @@
         "$ref": "#/entities/AppSettings"
       },
       "description": "Global app configuration controlled by admins"
+    },
+    "/hospitals/{hospitalId}": {
+      "schema": {
+        "$ref": "#/entities/Hospital"
+      },
+      "description": "Medical facilities and labs directory"
+    },
+    "/conversations/{userId}": {
+      "schema": {
+        "$ref": "#/entities/Conversation"
+      },
+      "description": "Support chat metadata"
+    },
+    "/conversations/{userId}/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Individual chat messages"
     }
   }
 }

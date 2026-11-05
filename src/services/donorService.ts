@@ -146,6 +146,18 @@ export async function saveDonorProfile(
   }
 }
 
+// Generic update for any donor field (used by admin and profile edits)
+export async function updateDonorProfile(donorId: string, updates: Partial<Donor>): Promise<void> {
+  const donorDocRef = doc(db, DONORS_COLLECTION, donorId);
+  try {
+    const payload: any = { ...updates, updatedAt: serverTimestamp() };
+    if (payload.id) delete payload.id;
+    await updateDoc(donorDocRef, payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `${DONORS_COLLECTION}/${donorId}`);
+  }
+}
+
 // Delete donor record (Admin or Owner)
 export async function deleteDonorProfile(donorId: string, donorPhone?: string): Promise<void> {
   try {

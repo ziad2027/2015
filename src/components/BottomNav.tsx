@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, Droplet, UserCircle, HeartHandshake } from 'lucide-react';
+import { Home, Users, Droplet, Hospital, Heart } from 'lucide-react';
 import { ActiveTab } from '../types';
 
 interface BottomNavProps {
@@ -31,14 +31,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       badge: urgentCount > 0 ? urgentCount : undefined,
     },
     {
-      id: 'profile' as ActiveTab,
-      label: 'حسابي',
-      icon: UserCircle,
+      id: 'hospitals' as ActiveTab,
+      label: 'المستشفيات',
+      icon: Hospital,
     },
     {
       id: 'info' as ActiveTab,
       label: 'فوائد التبرع',
-      icon: HeartHandshake,
+      icon: Heart,
     },
   ];
 

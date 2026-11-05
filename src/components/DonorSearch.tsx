@@ -19,11 +19,16 @@ import {
   Trash2,
   AlertTriangle,
   Calendar,
-  UserCheck
+  UserCheck,
+  Plus,
+  Upload,
+  Database,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BloodType, BLOOD_TYPES, Donor } from '../types';
-import { searchDonorsFromSheets } from '../services/googleSheetsService';
+import { searchDonorsFromSheets, importRawDonors, pushAllDonorsToSheets } from '../services/googleSheetsService';
 
 interface DonorSearchProps {
   donors: Donor[];
@@ -47,6 +52,14 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+
+  // In-page Admin Donors Tools states
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isSyncingSheets, setIsSyncingSheets] = useState(false);
+  const [sheetsSyncFeedback, setSheetsSyncFeedback] = useState<string | null>(null);
 
   // Admin delete states
   const [donorToDelete, setDonorToDelete] = useState<Donor | null>(null);
@@ -161,6 +174,47 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
       handleCopyPhone(text);
     }
   };
+  // Handle import text submission
+  const handleImportSubmit = async () => {
+    if (!importText.trim()) return;
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const res = await importRawDonors(importText);
+      if (res.success) {
+        setImportResult({
+          success: true,
+          message: `تم استيراد ${res.count} متبرعاً بنجاح إلى قاعدة البيانات!`,
+        });
+        setImportText('');
+      } else {
+        setImportResult({ success: false, message: res.error || 'فشل الاستيراد' });
+      }
+    } catch (err: any) {
+      setImportResult({ success: false, message: err.message || 'خطأ أثناء الاستيراد' });
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // Handle export to sheets
+  const handleSyncAllToSheets = async () => {
+    setIsSyncingSheets(true);
+    setSheetsSyncFeedback(null);
+    try {
+      const res = await pushAllDonorsToSheets(donors);
+      if (res.success) {
+        setSheetsSyncFeedback(`تمت مزامنة ${res.count} متبرعاً مع جدول Google Sheets بنجاح!`);
+      } else {
+        setSheetsSyncFeedback(res.error || 'فشلت المزامنة مع Google Sheets');
+      }
+    } catch (err: any) {
+      setSheetsSyncFeedback(`خطأ: ${err.message}`);
+    } finally {
+      setIsSyncingSheets(false);
+      setTimeout(() => setSheetsSyncFeedback(null), 5000);
+    }
+  };
 
   // Get donor count per blood type
   const countsPerType = useMemo(() => {
@@ -186,6 +240,120 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
           >
             إغلاق
           </button>
+        </div>
+      )}
+
+      {/* Admin In-Page Donors Toolbar */}
+      {isAdmin && (
+        <div className="bg-linear-to-r from-amber-600 via-amber-600 to-rose-700 text-white rounded-2xl p-4 shadow-md space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-200 shrink-0" />
+              <div>
+                <h3 className="text-sm font-black">أدوات إدارة المتبرعين (وضع المسؤول)</h3>
+                <p className="text-[11px] text-amber-100">إضافة أو استيراد أو تصدير وتعديل سجل المتبرعين مباشرة</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onNavigateToRegister}
+                className="px-3 py-1.5 rounded-xl bg-white text-amber-900 hover:bg-amber-50 text-xs font-black flex items-center gap-1 shadow-xs transition-colors active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>إضافة متبرع</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-amber-800/80 hover:bg-amber-800 text-white text-xs font-bold flex items-center gap-1 border border-amber-500/40 transition-colors active:scale-95"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>استيراد دفعة</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSyncAllToSheets}
+                disabled={isSyncingSheets}
+                className="px-3 py-1.5 rounded-xl bg-amber-800/80 hover:bg-amber-800 text-white text-xs font-bold flex items-center gap-1 border border-amber-500/40 transition-colors active:scale-95 disabled:opacity-50"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>{isSyncingSheets ? 'جارٍ المزامنة...' : 'تصدير للشيت'}</span>
+              </button>
+            </div>
+          </div>
+
+          {sheetsSyncFeedback && (
+            <div className="text-xs bg-amber-950/70 p-2.5 rounded-xl text-amber-100 border border-amber-500/40">
+              {sheetsSyncFeedback}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-extrabold text-slate-900">استيراد متبرعين دفعة واحدة</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportResult(null);
+                }}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              الصق هنا أسطر المتبرعين من جدول Excel أو CSV أو رسالة نصية. يتعرف النظام تلقائياً على الاسم ورقم الهاتف وفصيلة الدم والمنطقة.
+            </p>
+
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder="مثال:&#10;محمد صالح, O+, 773123456, قعطبة&#10;علي أحمد, A+, 771987654, مريس"
+              rows={6}
+              className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 outline-hidden focus:ring-2 focus:ring-amber-500"
+            />
+
+            {importResult && (
+              <div className={`p-3 rounded-xl text-xs font-bold ${importResult.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+                {importResult.message}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleImportSubmit}
+                disabled={importLoading || !importText.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+              >
+                {importLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>بدء الاستيراد</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportResult(null);
+                }}
+                className="py-2.5 px-4 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -452,36 +620,42 @@ export const DonorSearch: React.FC<DonorSearchProps> = ({
                     </button>
                   )}
 
-                  {/* Call Button */}
+                  {/* Call Button - No raw phone digits shown */}
                   <a
                     href={`tel:${donor.phone}`}
                     className="flex-1 min-w-[110px] py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    <span>اتصال ({donor.phone})</span>
+                    <span>اتصال</span>
                   </a>
 
-                  {/* WhatsApp Button */}
-                  <button
-                    onClick={() => handleWhatsApp(donor)}
-                    className="flex-1 min-w-[95px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95"
+                  {/* WhatsApp Button - Direct Instant Launch */}
+                  <a
+                    href={`https://wa.me/967${donor.phone.replace(/\D/g, '').replace(/^967/, '')}?text=${encodeURIComponent(
+                      `السلام عليكم أخي ${donor.fullName} الكريم،\nحصلت على رقمك من تطبيق (قطرة دم تنقذ حياة - سجل المتبرعين بقعطبة).\nلدينا حالة بحاجة ماسة لفصيلة الدم (${donor.bloodType})، هل أنت متاح للتبرع وجزاك الله خيراً؟`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-w-[95px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95 cursor-pointer"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>واتساب</span>
-                  </button>
+                  </a>
 
-                  {/* Copy Phone */}
-                  <button
-                    onClick={() => handleCopyPhone(donor.phone)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center transition-colors"
-                    title="نسخ رقم الهاتف"
-                  >
-                    {isCopied ? (
-                      <Check className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </button>
+                  {/* Copy Phone (Only visible to admin to protect privacy) */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleCopyPhone(donor.phone)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center transition-colors"
+                      title="نسخ رقم الهاتف (للمسؤول فقط)"
+                    >
+                      {isCopied ? (
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
 
                   {/* Share Donor */}
                   <button

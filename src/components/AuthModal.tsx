@@ -67,6 +67,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await loginWithGoogle();
+      localStorage.removeItem('has_logged_out');
       confetti({
         particleCount: 80,
         spread: 60,
@@ -105,6 +106,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await loginWithPhone(phone, password);
+      localStorage.removeItem('has_logged_out');
       onClose();
       handleResetForm();
     } catch (err: any) {
@@ -150,6 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await registerWithPhone(phone, password, fullName);
+      localStorage.removeItem('has_logged_out');
       confetti({
         particleCount: 90,
         spread: 70,
@@ -230,6 +233,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleGuest = () => {
+    localStorage.removeItem('has_logged_out');
     continueAsGuest();
     onClose();
     handleResetForm();
@@ -259,7 +263,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             قطرة دم تنقذ حياة
           </h2>
           <p className="text-xs text-slate-500">
-            سجل المتبرعين بالدم • مديرية قعطبة
+            بنك الدم • مديرية قعطبة
           </p>
         </div>
 

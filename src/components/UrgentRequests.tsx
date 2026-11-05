@@ -14,7 +14,9 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkles,
-  X
+  X,
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
@@ -71,10 +73,31 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
   urgentRequests,
   onOpenAuth,
 }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile, activeRole } = useAuth();
+  const isAdmin = activeRole === 'admin' || userProfile?.role === 'admin' || currentUser?.email === 'ziadalsyyadi@gmail.com';
+
   const [filterStatus, setFilterStatus] = useState<'open' | 'fulfilled' | 'all'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [whatsAppTargetReq, setWhatsAppTargetReq] = useState<UrgentRequest | null>(null);
+
+  // Admin delete urgent request states
+  const [reqToDelete, setReqToDelete] = useState<UrgentRequest | null>(null);
+  const [isDeletingReq, setIsDeletingReq] = useState(false);
+  const [deleteReqError, setDeleteReqError] = useState<string | null>(null);
+
+  const handleDeleteRequestConfirm = async () => {
+    if (!reqToDelete) return;
+    setIsDeletingReq(true);
+    setDeleteReqError(null);
+    try {
+      await deleteUrgentRequest(reqToDelete.id);
+      setReqToDelete(null);
+    } catch (err: any) {
+      setDeleteReqError(err.message || 'فشل حذف البلاغ');
+    } finally {
+      setIsDeletingReq(false);
+    }
+  };
 
   // New Request Form state
   const [patientName, setPatientName] = useState('');
@@ -202,6 +225,24 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Admin Urgent Requests In-Page Bar */}
+      {isAdmin && (
+        <div className="bg-linear-to-r from-amber-600 via-amber-700 to-rose-700 text-white rounded-2xl p-4 shadow-md space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-200 shrink-0" />
+              <div>
+                <h3 className="text-sm font-black">أدوات إدارة طلبات الدم (وضع المسؤول)</h3>
+                <p className="text-[11px] text-amber-100">يمكنك إغلاق أي طلب أو إعادة فتحه أو حذفه مباشرة عند توفير أكياس الدم</p>
+              </div>
+            </div>
+            <span className="text-xs bg-amber-900/60 px-3 py-1 rounded-full font-bold border border-amber-400/30">
+              {openCount} طلبات نشطة
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Top Action Bar */}
       <div className="bg-linear-to-r from-red-600 via-rose-600 to-amber-600 text-white rounded-2xl p-4 sm:p-5 shadow-md shadow-red-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -368,27 +409,60 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                 {/* Actions Bar */}
                 <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2 flex-1">
-                    {/* Call Direct */}
+                    {/* Call Direct - Clean privacy */}
                     <a
                       href={`tel:${req.contactPhone}`}
                       className="py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95"
                     >
                       <Phone className="w-3.5 h-3.5" />
-                      <span>اتصال ({req.contactPhone})</span>
+                      <span>اتصال</span>
                     </a>
 
-                    {/* WhatsApp */}
-                    <button
-                      onClick={() => handleWhatsApp(req)}
-                      className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95"
+                    {/* WhatsApp - Direct Instant Launch */}
+                    <a
+                      href={`https://wa.me/967${req.contactPhone.replace(/\D/g, '').replace(/^967/, '')}?text=${encodeURIComponent(
+                        `السلام عليكم ورحمة الله،\nبخصوص طلب الدم العاجل لفصيلة (${req.bloodType}) في (${req.hospital}) للمريض (${req.patientName}) عبر تطبيق (قطرة دم تنقذ حياة).\nأنا مستعد للتبرع والمساعدة، يرجى إفادتي بالتفاصيل ومكان الحضور فوراً.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors active:scale-95 cursor-pointer"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>أنا مستعد للتبرع</span>
+                    </a>
+
+                    {/* Quick Share / WhatsApp Broadcast */}
+                    <button
+                      onClick={() => {
+                        const shareText = `🔴 نداء طارئ للتبرع بالدم في قعطبة!\n` +
+                          `👤 المريض: ${req.patientName}\n` +
+                          `🩸 الفصيلة المطلوبة: ${req.bloodType}\n` +
+                          `💉 الوحدات: ${req.unitsNeeded} كيس\n` +
+                          `🏥 المستشفى: ${req.hospital}\n` +
+                          `⚠️ ملاحظة: الطلب ساري لمدة 48 ساعة.\n\n` +
+                          `تطبيق بنك الدم في مديرية قعطبة 🩸`;
+
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'نداء عاجل للتبرع بالدم - قعطبة',
+                            text: shareText,
+                            url: window.location.href,
+                          }).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(shareText);
+                          alert('تم نسخ تفاصيل النداء بنجاح! يمكنك لصقه في مجموعات واتساب.');
+                        }
+                      }}
+                      className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1 transition-colors active:scale-95"
+                      title="مشاركة النداء عبر واتساب ومجموعات الخير"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-slate-600" />
+                      <span className="hidden sm:inline">مشاركة</span>
                     </button>
                   </div>
 
-                  {/* Creator Controls (Close / Reopen / Delete) */}
-                  {isAuthor && (
+                  {/* Creator or Admin Controls (Close / Reopen / Delete) */}
+                  {(isAuthor || isAdmin) && (
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleToggleStatus(req)}
@@ -399,6 +473,15 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                         }`}
                       >
                         {isFulfilled ? 'إعادة فتح الطلب' : 'إغلاق (تم توفير الدم)'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReqToDelete(req)}
+                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-colors"
+                        title="حذف البلاغ"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                       </button>
                     </div>
                   )}
@@ -720,6 +803,53 @@ export const UrgentRequests: React.FC<UrgentRequestsProps> = ({
                 type="button"
                 onClick={() => setWhatsAppTargetReq(null)}
                 className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Request Confirmation Modal */}
+      {reqToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-slate-900">
+                تأكيد حذف طلب الدم
+              </h3>
+              <p className="text-xs text-slate-500">
+                هل أنت متأكد من حذف طلب الدم للمريض <strong className="text-slate-800">({reqToDelete.patientName})</strong>؟
+              </p>
+            </div>
+
+            {deleteReqError && (
+              <div className="text-xs p-2.5 rounded-xl bg-rose-50 text-rose-700 font-bold border border-rose-200">
+                {deleteReqError}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleDeleteRequestConfirm}
+                disabled={isDeletingReq}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-200 transition-colors active:scale-95 disabled:opacity-50"
+              >
+                {isDeletingReq ? 'جارٍ الحذف...' : 'نعم، حذف الطلب'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReqToDelete(null);
+                  setDeleteReqError(null);
+                }}
+                className="py-2.5 px-4 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
               >
                 إلغاء
               </button>

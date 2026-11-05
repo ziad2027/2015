@@ -36,8 +36,8 @@ export const AndroidInstallModal: React.FC<AndroidInstallModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'قطرة دم تنقذ حياة - سجل المتبرعين بالدم في مديرية قعطبة',
-          text: 'رابط تطبيق قطرة دم تنقذ حياة، سجل المتبرعين بالدم بمديرية قعطبة للبحث والتبرع وإنقاذ الحالات الحرجة:',
+          title: 'قطرة دم تنقذ حياة - بنك الدم في مديرية قعطبة',
+          text: 'رابط تطبيق قطرة دم تنقذ حياة، بنك الدم بمديرية قعطبة للبحث والتبرع وإنقاذ الحالات الحرجة:',
           url: appUrl,
         });
       } catch (e) {}

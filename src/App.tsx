@@ -15,8 +15,12 @@ import { BloodDonationEducationalInfo } from './components/BloodDonationEducatio
 import { ConfirmExitModal } from './components/ConfirmExitModal';
 import { RoleSelectionModal } from './components/RoleSelectionModal';
 import { NotificationsModal } from './components/NotificationsModal';
+import { QaetabahHospitalsDirectory } from './components/QaetabahHospitalsDirectory';
+import { Sidebar } from './components/Sidebar';
+import ChatSupport from './components/ChatSupport';
+// Removed DonorStats import
 import { ActiveTab, Donor, UrgentRequest, BloodType } from './types';
-import { onSnapshot, doc } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { 
   subscribeToDonors, 
@@ -25,10 +29,10 @@ import {
   deleteDonorProfile
 } from './services/donorService';
 import { INITIAL_SEED_DONORS } from './data/initialData';
-import { Droplet, Heart, ShieldAlert, Sparkles, Smartphone, WifiOff, RefreshCw, CheckCircle2, Megaphone, X } from 'lucide-react';
+import { Droplet, Heart, ShieldAlert, Sparkles, Smartphone, WifiOff, RefreshCw, CheckCircle2, Megaphone, X, Hospital, ShieldCheck } from 'lucide-react';
 
 function AppContent() {
-  const { currentUser, userProfile, activeRole, switchActiveRole, isLoading: authLoading } = useAuth();
+  const { currentUser, userProfile, activeRole, switchActiveRole, isLoading: authLoading, logout } = useAuth();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [searchFilter, setSearchFilter] = useState<BloodType | 'ALL'>('ALL');
@@ -38,6 +42,9 @@ function AppContent() {
   const [announcement, setAnnouncement] = useState<string>('');
   const [announcementType, setAnnouncementType] = useState<'general' | 'urgent' | 'campaign'>('general');
   const [announcementTime, setAnnouncementTime] = useState<string>('');
+  const [adminAnnouncementInput, setAdminAnnouncementInput] = useState<string>('');
+  const [adminAnnouncementType, setAdminAnnouncementType] = useState<'general' | 'urgent' | 'campaign'>('general');
+  const [savingAnnouncement, setSavingAnnouncement] = useState<boolean>(false);
   const [loadingData, setLoadingData] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -63,10 +70,12 @@ function AppContent() {
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isHospitalsOpen, setIsHospitalsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingDonorId, setEditingDonorId] = useState<string | null>(null);
 
-  const handleEditDonor = (donorId: string) => {
-    setEditingDonorId(donorId);
+  const handleEditDonor = (donorId?: string) => {
+    setEditingDonorId(donorId || null);
     setActiveTab('register');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -92,7 +101,7 @@ function AppContent() {
 
   // Handle searching with a specific filter from other tabs
   const handleSearchWithFilter = (bloodType: BloodType | 'ALL' | ActiveTab) => {
-    if (bloodType === 'home' || bloodType === 'search' || bloodType === 'urgent' || bloodType === 'register' || bloodType === 'profile' || bloodType === 'admin') {
+    if (bloodType === 'home' || bloodType === 'search' || bloodType === 'urgent' || bloodType === 'register' || bloodType === 'admin') {
       if (bloodType === 'search') setSearchFilter('ALL');
       setActiveTab(bloodType as ActiveTab);
       if (bloodType !== 'register') setEditingDonorId(null);
@@ -104,24 +113,70 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Exit confirmation logic
+  // Sync admin announcement input when announcement changes
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
+    if (announcement) {
+      setAdminAnnouncementInput(announcement);
+    }
+  }, [announcement]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  const handleSaveAnnouncement = async () => {
+    if (!currentUser) return;
+    setSavingAnnouncement(true);
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        announcement: adminAnnouncementInput.trim(),
+        noticeMessage: adminAnnouncementInput.trim(),
+        announcementType: adminAnnouncementType,
+        announcementTime: new Date().toISOString(),
+        announcementActive: Boolean(adminAnnouncementInput.trim()),
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid,
+      }, { merge: true });
+      setRefreshToast('تم نشر وتحديث التعميم بنجاح لتظهر فوراً لدى جميع المستخدمين! ✓');
+      setTimeout(() => setRefreshToast(null), 4000);
+    } catch (err: any) {
+      console.error('Error saving announcement:', err);
+      setRefreshToast(`فشل حفظ التعميم: ${err.message}`);
+      setTimeout(() => setRefreshToast(null), 4000);
+    } finally {
+      setSavingAnnouncement(false);
+    }
+  };
 
-  // Handle manual exit via UI if needed (for mobile-like experience)
-  const handleExit = () => {
-    window.close();
-    // Fallback if window.close is blocked
-    setTimeout(() => {
-      window.location.href = 'about:blank';
-    }, 500);
+  const handleClearAnnouncement = async () => {
+    if (!currentUser) return;
+    setSavingAnnouncement(true);
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        announcement: '',
+        noticeMessage: '',
+        announcementActive: false,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid,
+      }, { merge: true });
+      setAdminAnnouncementInput('');
+      setRefreshToast('تم مسح التعميم بنجاح! ✓');
+      setTimeout(() => setRefreshToast(null), 3000);
+    } catch (err: any) {
+      console.error('Error clearing announcement:', err);
+    } finally {
+      setSavingAnnouncement(false);
+    }
+  };
+
+  // Handle manual exit via UI with logout confirmation
+  const handleExit = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    localStorage.removeItem('blood_app_guest');
+    localStorage.setItem('has_logged_out', 'true');
+    setIsExitConfirmOpen(false);
+    setActiveTab('home');
+    setIsAuthOpen(true);
   };
 
   // Real-time Firestore sync and merged Sheets data
@@ -378,6 +433,26 @@ function AppContent() {
     }
   }, [loadingData, donors.length, currentUser]);
 
+  // Initialize push notifications
+  useEffect(() => {
+    if (currentUser) {
+      import('./services/notificationService').then(({ initializePushNotifications }) => {
+        initializePushNotifications(currentUser.uid);
+      });
+    }
+  }, [currentUser]);
+
+  // Prompt unauthenticated users or users after logout with AuthModal
+  useEffect(() => {
+    if (!authLoading && !loadingData) {
+      const isGuestSaved = localStorage.getItem('blood_app_guest') === 'true';
+      const hasLoggedOut = localStorage.getItem('has_logged_out') === 'true';
+      if (!currentUser && (hasLoggedOut || !isGuestSaved)) {
+        setIsAuthOpen(true);
+      }
+    }
+  }, [authLoading, loadingData, currentUser]);
+
   // Filter urgent requests: automatically hide those older than 48 hours
   const validUrgentRequests = urgentRequests.filter((r) => !isUrgentRequestExpired(r));
   const activeUrgentCount = validUrgentRequests.filter((r) => r.status === 'open').length;
@@ -390,13 +465,21 @@ function AppContent() {
       <Header
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenInstallModal={() => setIsInstallOpen(true)}
-        onGoToProfile={() => setActiveTab('profile')}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
         onGoToUrgent={() => setActiveTab('urgent')}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenRoleModal={() => setIsRoleModalOpen(true)}
         onGlobalRefresh={handleGlobalRefresh}
         isRefreshing={isRefreshing}
         unreadCount={totalUnreadNotifications}
+      />
+
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        donors={donors}
+        onOpenExitConfirm={() => setIsExitConfirmOpen(true)}
+        onOpenChat={() => setActiveTab('chat')}
       />
 
       {/* Floating Refresh Toast Feedback */}
@@ -414,7 +497,7 @@ function AppContent() {
       )}
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 py-4 pb-28 sm:pb-16 min-h-[calc(100vh-4rem)]">
         {isOffline && (
           <div className="mb-4 p-3 rounded-2xl bg-amber-500 text-white shadow-lg flex items-center justify-between gap-2 dir-rtl">
             <div className="flex items-center gap-2">
@@ -446,10 +529,10 @@ function AppContent() {
             </div>
             <div className="text-center space-y-1">
               <h2 className="text-base font-extrabold text-slate-900">
-                قطرة دم تنقذ حياة
+                قطرة دم تنقذ حياة إنسان
               </h2>
               <p className="text-xs text-slate-500">
-                سجل المتبرعين بالدم • مديرية قعطبة
+                بنك الدم في مديرية قعطبة
               </p>
             </div>
             <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
@@ -490,12 +573,99 @@ function AppContent() {
             )}
 
             {activeTab === 'home' && (
-              <HeroBanner
-                onNavigate={handleSearchWithFilter}
-                donors={donors}
-                urgentRequests={validUrgentRequests}
-                onOpenCompatibility={() => setIsCompatOpen(true)}
-              />
+              <div className="space-y-6">
+                {/* In-page Admin Announcement & Controls on Home */}
+                {activeRole === 'admin' && (
+                  <div className="bg-linear-to-r from-amber-600 via-amber-700 to-rose-700 text-white rounded-2xl p-4 shadow-md space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-amber-200 shrink-0" />
+                        <div>
+                          <h3 className="text-sm font-black">أدوات الإدارة والتعميم (وضع المسؤول)</h3>
+                          <p className="text-[11px] text-amber-100">تحكم بالرسائل العامة والإشعارات وتحديث النظام</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleGlobalRefresh}
+                          disabled={isRefreshing}
+                          className="px-3 py-1.5 rounded-xl bg-white text-amber-950 hover:bg-amber-50 text-xs font-black flex items-center gap-1.5 shadow-xs transition-colors active:scale-95 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          <span>تحديث شامل</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Announcement Editor */}
+                    <div className="bg-amber-950/40 p-3 rounded-xl border border-amber-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-amber-100">التعميم الحالي المنشور:</span>
+                        <div className="flex items-center gap-1 text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => setAdminAnnouncementType('general')}
+                            className={`px-2 py-0.5 rounded-lg font-bold ${adminAnnouncementType === 'general' ? 'bg-amber-500 text-white' : 'text-amber-200 hover:bg-amber-800'}`}
+                          >
+                            عام
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAdminAnnouncementType('urgent')}
+                            className={`px-2 py-0.5 rounded-lg font-bold ${adminAnnouncementType === 'urgent' ? 'bg-rose-600 text-white' : 'text-amber-200 hover:bg-amber-800'}`}
+                          >
+                            عاجل
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAdminAnnouncementType('campaign')}
+                            className={`px-2 py-0.5 rounded-lg font-bold ${adminAnnouncementType === 'campaign' ? 'bg-emerald-600 text-white' : 'text-amber-200 hover:bg-amber-800'}`}
+                          >
+                            حملة
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={adminAnnouncementInput}
+                          onChange={(e) => setAdminAnnouncementInput(e.target.value)}
+                          placeholder="اكتب رسالة أو تعميم ليظهر كشريط إشعارات عند جميع المستخدمين..."
+                          className="flex-1 px-3 py-2 rounded-xl bg-white text-slate-800 text-xs font-bold outline-hidden shadow-inner"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveAnnouncement}
+                          disabled={savingAnnouncement}
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-xs transition-colors shrink-0 disabled:opacity-50"
+                        >
+                          {savingAnnouncement ? 'جارٍ النشر...' : 'نشر'}
+                        </button>
+                        {announcement && (
+                          <button
+                            type="button"
+                            onClick={handleClearAnnouncement}
+                            className="px-2.5 py-2 rounded-xl bg-rose-900/60 hover:bg-rose-900 text-rose-200 text-xs font-bold shrink-0"
+                            title="مسح التعميم"
+                          >
+                            مسح
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <HeroBanner
+                  onNavigate={handleSearchWithFilter}
+                  donors={donors}
+                  urgentRequests={validUrgentRequests}
+                  onOpenCompatibility={() => setIsCompatOpen(true)}
+                />
+              </div>
             )}
 
             {activeTab === 'search' && (
@@ -532,20 +702,17 @@ function AppContent() {
               <BloodDonationEducationalInfo />
             )}
 
-            {activeTab === 'profile' && (
-              <UserProfileView
-                donors={donors}
-                urgentRequests={validUrgentRequests}
-                onNavigateToRegister={(id) => {
-                  setEditingDonorId(id || null);
-                  setActiveTab('register');
-                }}
-                onOpenInstallModal={() => setIsInstallOpen(true)}
-                onOpenAuth={() => setIsAuthOpen(true)}
-                onGoToAdmin={() => setActiveTab('admin')}
-                onOpenExitConfirm={() => setIsExitConfirmOpen(true)}
-                onSearchWithFilter={handleSearchWithFilter}
-              />
+            {activeTab === 'hospitals' && (
+              <div className="w-full max-w-4xl mx-auto space-y-4">
+                <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/90 text-center">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-inner">
+                    <Hospital className="w-7 h-7 sm:w-8 sm:h-8" />
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">دليل المستشفيات والنقاط الطبية</h2>
+                  <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1">مديرية قعطبة - الضالع</p>
+                </div>
+                <QaetabahHospitalsDirectory isOpen={true} isEmbedded={true} onClose={() => setActiveTab('home')} />
+              </div>
             )}
 
             {activeTab === 'admin' && (
@@ -556,6 +723,13 @@ function AppContent() {
                 onDeleteDonor={handleDeleteDonor}
                 onGlobalRefresh={handleGlobalRefresh}
                 isRefreshing={isRefreshing}
+              />
+            )}
+
+            {activeTab === 'chat' && (
+              <ChatSupport 
+                userProfile={userProfile}
+                onBack={() => setActiveTab('home')}
               />
             )}
           </>
@@ -624,6 +798,11 @@ function AppContent() {
           setActiveTab('urgent');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+      />
+
+      <QaetabahHospitalsDirectory
+        isOpen={isHospitalsOpen}
+        onClose={() => setIsHospitalsOpen(false)}
       />
 
     </div>
